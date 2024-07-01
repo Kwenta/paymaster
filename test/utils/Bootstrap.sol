@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.25;
 
+import "lib/account-abstraction/contracts/core/EntryPoint.sol";
+
 import {console2} from "lib/forge-std/src/console2.sol";
 import {
     MarginPaymaster,
@@ -14,12 +16,14 @@ contract Bootstrap is Test {
     using console2 for *;
 
     MarginPaymaster internal marginPaymaster;
+    EntryPoint internal entryPoint;
 
     function initializeLocal() internal {
         BootstrapLocal bootstrap = new BootstrapLocal();
         (address marginPaymasterAddress) = bootstrap.init();
 
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
+        entryPoint = new EntryPoint();
     }
 
     function initializeOptimismGoerli() internal {
