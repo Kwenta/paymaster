@@ -3,7 +3,7 @@ pragma solidity 0.8.25;
 
 import {console2} from "lib/forge-std/src/console2.sol";
 import {
-    Counter,
+    MarginPaymaster,
     OptimismGoerliParameters,
     OptimismParameters,
     Setup
@@ -13,27 +13,27 @@ import {Test} from "lib/forge-std/src/Test.sol";
 contract Bootstrap is Test {
     using console2 for *;
 
-    Counter internal counter;
+    MarginPaymaster internal marginPaymaster;
 
     function initializeLocal() internal {
         BootstrapLocal bootstrap = new BootstrapLocal();
-        (address counterAddress) = bootstrap.init();
+        (address marginPaymasterAddress) = bootstrap.init();
 
-        counter = Counter(counterAddress);
+        marginPaymaster = MarginPaymaster(marginPaymasterAddress);
     }
 
     function initializeOptimismGoerli() internal {
         BootstrapOptimismGoerli bootstrap = new BootstrapOptimismGoerli();
-        (address counterAddress) = bootstrap.init();
+        (address marginPaymasterAddress) = bootstrap.init();
 
-        counter = Counter(counterAddress);
+        marginPaymaster = MarginPaymaster(marginPaymasterAddress);
     }
 
     function initializeOptimism() internal {
         BootstrapOptimismGoerli bootstrap = new BootstrapOptimismGoerli();
-        (address counterAddress) = bootstrap.init();
+        (address marginPaymasterAddress) = bootstrap.init();
 
-        counter = Counter(counterAddress);
+        marginPaymaster = MarginPaymaster(marginPaymasterAddress);
     }
 
     /// @dev add other networks here as needed (ex: Base, BaseGoerli)
@@ -41,25 +41,25 @@ contract Bootstrap is Test {
 
 contract BootstrapLocal is Setup {
     function init() public returns (address) {
-        address counterAddress = Setup.deploySystem();
+        address marginPaymasterAddress = Setup.deploySystem();
 
-        return counterAddress;
+        return marginPaymasterAddress;
     }
 }
 
 contract BootstrapOptimism is Setup, OptimismParameters {
     function init() public returns (address) {
-        address counterAddress = Setup.deploySystem();
+        address marginPaymasterAddress = Setup.deploySystem();
 
-        return counterAddress;
+        return marginPaymasterAddress;
     }
 }
 
 contract BootstrapOptimismGoerli is Setup, OptimismGoerliParameters {
     function init() public returns (address) {
-        address counterAddress = Setup.deploySystem();
+        address marginPaymasterAddress = Setup.deploySystem();
 
-        return counterAddress;
+        return marginPaymasterAddress;
     }
 }
 
