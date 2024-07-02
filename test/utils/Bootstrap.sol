@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.25;
 
-import "lib/account-abstraction/contracts/core/EntryPoint.sol";
+import {EntryPoint} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
 
 import {console2} from "lib/forge-std/src/console2.sol";
 import {
