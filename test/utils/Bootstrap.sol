@@ -2,6 +2,7 @@
 pragma solidity 0.8.25;
 
 import {EntryPoint} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
+import {LightAccountFactory} from "lib/light-account/src/LightAccountFactory.sol";
 
 import {console2} from "lib/forge-std/src/console2.sol";
 import {
@@ -17,6 +18,7 @@ contract Bootstrap is Test {
 
     MarginPaymaster internal marginPaymaster;
     EntryPoint internal entryPoint;
+    LightAccountFactory internal lightAccountFactory;
 
     function initializeLocal() internal {
         BootstrapLocal bootstrap = new BootstrapLocal();
@@ -24,6 +26,7 @@ contract Bootstrap is Test {
 
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
         entryPoint = new EntryPoint();
+        lightAccountFactory = new LightAccountFactory(address(this), entryPoint);
     }
 
     function initializeOptimismGoerli() internal {
