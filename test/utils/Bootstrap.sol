@@ -5,16 +5,24 @@ import {EntryPoint, PackedUserOperation} from "lib/account-abstraction/contracts
 import {LightAccountFactory, LightAccount} from "lib/light-account/src/LightAccountFactory.sol";
 import {BaseLightAccount} from "lib/light-account/src/common/BaseLightAccount.sol";
 
-import {console2} from "lib/forge-std/src/console2.sol";
+import {Counter} from "test/utils/Counter.sol";
 import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, Setup} from "script/Deploy.s.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
+import {console2} from "lib/forge-std/src/console2.sol";
 
 contract Bootstrap is Test {
     using console2 for *;
 
+    Counter counter = new Counter();
     MarginPaymaster internal marginPaymaster;
     EntryPoint internal entryPoint;
     LightAccountFactory internal lightAccountFactory;
+    uint256 userPk = 0x1234;
+    uint256 bundlerPk = 0x12345;
+    address payable user = payable(vm.addr(0x1234));
+    address payable bundler = payable(vm.addr(0x12345));
+
+    PackedUserOperation[] ops;
 
     function initializeLocal() internal {
         BootstrapLocal bootstrap = new BootstrapLocal();
@@ -33,13 +41,13 @@ contract Bootstrap is Test {
             address(this),
             accountSalt
         );
-        address dest = address(this);
-        uint256 value;
-        bytes memory func = abi.encodeWithSelector(MarginPaymaster.increment.selector);
+        address dest = address(counter);
+        uint256 value = 0;
+        bytes memory func = abi.encodeWithSelector(Counter.increment.selector);
         bytes memory callData = abi.encodeWithSelector(BaseLightAccount.execute.selector, dest, value, func);
         bytes memory signature;
         PackedUserOperation memory op = PackedUserOperation({
-            sender: address(this),
+            sender: user,
             nonce: 1,
             initCode: initCode,
             callData: callData,
@@ -49,6 +57,14 @@ contract Bootstrap is Test {
             paymasterAndData: abi.encode(address(marginPaymaster)),
             signature: signature
         });
+        ops.push(op);
+
+        assertEq(counter.number(), 0);
+
+        vm.prank(bundler);
+        entryPoint.handleOps(ops, user);
+
+        assertEq(counter.number(), 1);
     }
 
     function initializeOptimismGoerli() internal {
