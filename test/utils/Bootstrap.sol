@@ -79,7 +79,7 @@ contract Bootstrap is Test {
         assertEq(balanceOfPaymasterBefore, initialPaymasterBalance);
 
         vm.prank(bundler);
-        entryPoint.handleOps(ops, user);
+        entryPoint.handleOps(ops, bundler);
 
 
         uint256 balanceOfPaymasterAfter = entryPoint.balanceOf(address(marginPaymaster));
