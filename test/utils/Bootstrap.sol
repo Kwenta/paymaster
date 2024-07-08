@@ -2,11 +2,11 @@
 pragma solidity 0.8.25;
 
 import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
-// import {LightAccountFactory, LightAccount} from "lib/light-account/src/LightAccountFactory.sol";
-// import {BaseLightAccount} from "lib/light-account/src/common/BaseLightAccount.sol";
+// import {AccountFactory, LightAccount} from "lib/light-account/src/AccountFactory.sol";
 
 import {Counter} from "test/utils/Counter.sol";
 import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, Setup} from "script/Deploy.s.sol";
+import {AccountFactory, Account} from "src/Account.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
 import {console2} from "lib/forge-std/src/console2.sol";
 
@@ -16,7 +16,7 @@ contract Bootstrap is Test {
     Counter counter = new Counter();
     MarginPaymaster internal marginPaymaster;
     EntryPoint internal entryPoint;
-    // LightAccountFactory internal lightAccountFactory;
+    AccountFactory internal accountFactory;
     uint256 userPk = 0x1234;
     uint256 bundlerPk = 0x12345;
     address payable user = payable(vm.addr(0x1234));
@@ -29,15 +29,12 @@ contract Bootstrap is Test {
         address marginPaymasterAddress = bootstrap.init();
 
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
-        // entryPoint = new EntryPoint();
-        // lightAccountFactory = new LightAccountFactory(
-        //     address(this),
-        //     entryPoint
-        // );
+        entryPoint = new EntryPoint();
+        accountFactory = new AccountFactory();
 
         // uint256 accountSalt = 1;
         // bytes memory initCode = abi.encodeWithSelector(
-        //     LightAccountFactory.createAccount.selector,
+        //     AccountFactory.createAccount.selector,
         //     address(this),
         //     accountSalt
         // );
