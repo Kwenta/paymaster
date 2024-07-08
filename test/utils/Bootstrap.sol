@@ -20,6 +20,7 @@ contract Bootstrap is Test {
     uint256 bundlerPk = 0x12345;
     address payable user = payable(vm.addr(0x1234));
     address payable bundler = payable(vm.addr(0x12345));
+    uint256 internal initialPaymasterBalance = 10 ether;
 
     UserOperation[] ops;
 
@@ -30,9 +31,8 @@ contract Bootstrap is Test {
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
         entryPoint = new EntryPoint();
         accountFactory = new AccountFactory();
-        vm.deal(marginPaymasterAddress, 100 ether);
-        vm.deal(address(this), 10 ether);
-        entryPoint.depositTo{value: 10 ether}(marginPaymasterAddress);
+        vm.deal(address(this), initialPaymasterBalance);
+        entryPoint.depositTo{value: initialPaymasterBalance}(marginPaymasterAddress);
 
         bytes memory initCode = abi.encodePacked(
             address(accountFactory),
@@ -74,9 +74,16 @@ contract Bootstrap is Test {
         ops.push(userOp);
 
         assertEq(sender.code.length, 0);
+        assertEq(sender.balance, 0);
+        uint256 balanceOfPaymasterBefore = entryPoint.balanceOf(address(marginPaymaster));
+        assertEq(balanceOfPaymasterBefore, initialPaymasterBalance);
 
         vm.prank(bundler);
         entryPoint.handleOps(ops, user);
+
+
+        uint256 balanceOfPaymasterAfter = entryPoint.balanceOf(address(marginPaymaster));
+        assertLt(balanceOfPaymasterAfter, balanceOfPaymasterBefore);
 
         assertGt(sender.code.length, 0);
         assertEq(account.count(), 1);
