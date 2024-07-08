@@ -15,6 +15,7 @@ contract Bootstrap is Test {
     MarginPaymaster internal marginPaymaster;
     EntryPoint internal entryPoint;
     AccountFactory internal accountFactory;
+    Account internal account;
     uint256 userPk = 0x1234;
     uint256 bundlerPk = 0x12345;
     address payable user = payable(vm.addr(0x1234));
@@ -52,6 +53,7 @@ contract Bootstrap is Test {
             }
             sender = bytesToAddress(result);
         }
+        account = Account(sender);
 
         uint256 nonce = entryPoint.getNonce(sender, 0);
         bytes memory signature;
@@ -69,36 +71,15 @@ contract Bootstrap is Test {
             signature: signature
         });
 
-        // uint256 accountSalt = 1;
-        // bytes memory initCode = abi.encodeWithSelector(
-        //     AccountFactory.createAccount.selector,
-        //     address(this),
-        //     accountSalt
-        // );
-        // address dest = address(counter);
-        // uint256 value = 0;
-        // bytes memory func = abi.encodeWithSelector(Counter.increment.selector);
-        // bytes memory callData = abi.encodeWithSelector(BaseLightAccount.execute.selector, dest, value, func);
-        // bytes memory signature;
-        // UserOperation memory op = UserOperation({
-        //     sender: user,
-        //     nonce: 1,
-        //     initCode: initCode,
-        //     callData: callData,
-        //     accountGasLimits: bytes32(uint256(1 ether)),
-        //     preVerificationGas: 1 ether,
-        //     gasFees: bytes32(uint256(10 gwei)),
-        //     paymasterAndData: abi.encode(address(marginPaymaster)),
-        //     signature: signature
-        // });
         ops.push(userOp);
 
-        // assertEq(counter.number(), 0);
+        assertEq(sender.code.length, 0);
 
         vm.prank(bundler);
         entryPoint.handleOps(ops, user);
 
-        // assertEq(counter.number(), 1);
+        assertGt(sender.code.length, 0);
+        assertEq(account.count(), 1);
     }
 
     function bytesToAddress(bytes memory bys) private pure returns (address addr) {
