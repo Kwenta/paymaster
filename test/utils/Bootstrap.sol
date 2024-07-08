@@ -29,6 +29,7 @@ contract Bootstrap is Test {
         address marginPaymasterAddress = bootstrap.init();
 
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
+        vm.deal(marginPaymasterAddress, 10 ether);
         entryPoint = new EntryPoint();
         accountFactory = new AccountFactory();
 
