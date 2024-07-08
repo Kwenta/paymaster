@@ -29,9 +29,11 @@ contract Bootstrap is Test {
         address marginPaymasterAddress = bootstrap.init();
 
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
-        vm.deal(marginPaymasterAddress, 10 ether);
         entryPoint = new EntryPoint();
         accountFactory = new AccountFactory();
+        vm.deal(marginPaymasterAddress, 100 ether);
+        vm.deal(address(this), 10 ether);
+        entryPoint.depositTo{value: 10 ether}(marginPaymasterAddress);
 
         bytes memory initCode = abi.encodePacked(
             address(accountFactory),
@@ -65,7 +67,7 @@ contract Bootstrap is Test {
             preVerificationGas: 200_000,
             maxFeePerGas: 10 gwei,
             maxPriorityFeePerGas: 10 gwei,
-            paymasterAndData: abi.encode(address(marginPaymaster)),
+            paymasterAndData: abi.encodePacked(address(marginPaymaster)),
             signature: signature
         });
 
@@ -91,12 +93,12 @@ contract Bootstrap is Test {
         //     paymasterAndData: abi.encode(address(marginPaymaster)),
         //     signature: signature
         // });
-        // ops.push(op);
+        ops.push(userOp);
 
         // assertEq(counter.number(), 0);
 
-        // vm.prank(bundler);
-        // entryPoint.handleOps(ops, user);
+        vm.prank(bundler);
+        entryPoint.handleOps(ops, user);
 
         // assertEq(counter.number(), 1);
     }
