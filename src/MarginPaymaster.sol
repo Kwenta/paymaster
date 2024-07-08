@@ -5,7 +5,7 @@ import {IPaymaster, PackedUserOperation} from "lib/account-abstraction/contracts
 
 /// @title Kwenta Paymaster Contract
 /// @notice Responsible for paying tx gas fees using trader margin
-/// @author tommyrharper (zeroknowledge@gmail.com)
+/// @author tommyrharper (zeroknowledgeltd@gmail.com)
 contract MarginPaymaster is IPaymaster {
     uint256 public number;
 
