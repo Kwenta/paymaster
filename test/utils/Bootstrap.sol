@@ -32,6 +32,11 @@ contract Bootstrap is Test {
         entryPoint = new EntryPoint();
         accountFactory = new AccountFactory();
 
+        bytes memory initCode = abi.encodePacked(
+            address(accountFactory),
+            abi.encodeCall(accountFactory.createAccount, (address(this)))
+        );
+
         // uint256 accountSalt = 1;
         // bytes memory initCode = abi.encodeWithSelector(
         //     AccountFactory.createAccount.selector,
