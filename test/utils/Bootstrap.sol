@@ -38,7 +38,7 @@ contract Bootstrap is Test {
             abi.encodeCall(accountFactory.createAccount, (address(this)))
         );
 
-        address senderAddress;
+        address sender;
         try entryPoint.getSenderAddress(initCode) {
             assert(false);
         } catch (bytes memory reason) {
@@ -50,9 +50,10 @@ contract Bootstrap is Test {
                     mload(add(add(reason, 32), sub(mload(reason), 20)))
                 )
             }
-            senderAddress = bytesToAddress(result);
+            sender = bytesToAddress(result);
         }
-        console.log("senderAddress", senderAddress);
+
+        uint256 nonce = entryPoint.getNonce(sender, 0);
 
         // uint256 accountSalt = 1;
         // bytes memory initCode = abi.encodeWithSelector(
