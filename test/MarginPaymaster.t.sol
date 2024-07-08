@@ -9,7 +9,7 @@ contract MarginPaymasterTest is Bootstrap {
         /// at a specific block number
         // vm.rollFork(NETWORK_BLOCK_NUMBER);
 
-        initializeOptimismGoerli();
+        initializeLocal();
     }
 
     function testIncrement() public {
