@@ -2,16 +2,16 @@
 pragma solidity 0.8.25;
 
 import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
-// import {AccountFactory, LightAccount} from "lib/light-account/src/AccountFactory.sol";
+import {IEntryPoint} from "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
 import {Counter} from "test/utils/Counter.sol";
 import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, Setup} from "script/Deploy.s.sol";
 import {AccountFactory, Account} from "src/Account.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
-import {console2} from "lib/forge-std/src/console2.sol";
+import {console} from "lib/forge-std/src/console.sol";
 
 contract Bootstrap is Test {
-    using console2 for *;
+    error SenderAddressResult(address sender);
 
     Counter counter = new Counter();
     MarginPaymaster internal marginPaymaster;
@@ -36,6 +36,22 @@ contract Bootstrap is Test {
             address(accountFactory),
             abi.encodeCall(accountFactory.createAccount, (address(this)))
         );
+
+        address senderAddress;
+        try entryPoint.getSenderAddress(initCode) {
+            assert(false);
+        } catch (bytes memory reason) {
+            bytes memory result = new bytes(20);
+            assembly {
+                // Copy the last 20 bytes from `reason` to `result`
+                mstore(
+                    add(result, 32),
+                    mload(add(add(reason, 32), sub(mload(reason), 20)))
+                )
+            }
+            senderAddress = bytesToAddress(result);
+        }
+        console.log("senderAddress", senderAddress);
 
         // uint256 accountSalt = 1;
         // bytes memory initCode = abi.encodeWithSelector(
@@ -67,6 +83,12 @@ contract Bootstrap is Test {
         // entryPoint.handleOps(ops, user);
 
         // assertEq(counter.number(), 1);
+    }
+
+    function bytesToAddress(bytes memory bys) private pure returns (address addr) {
+        assembly {
+            addr := mload(add(bys, 20))
+        }
     }
 
     function initializeOptimismGoerli() internal {
