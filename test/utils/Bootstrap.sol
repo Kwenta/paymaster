@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.25;
 
-import {EntryPoint, PackedUserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
+import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
 import {LightAccountFactory, LightAccount} from "lib/light-account/src/LightAccountFactory.sol";
 import {BaseLightAccount} from "lib/light-account/src/common/BaseLightAccount.sol";
 
@@ -22,7 +22,7 @@ contract Bootstrap is Test {
     address payable user = payable(vm.addr(0x1234));
     address payable bundler = payable(vm.addr(0x12345));
 
-    PackedUserOperation[] ops;
+    UserOperation[] ops;
 
     function initializeLocal() internal {
         BootstrapLocal bootstrap = new BootstrapLocal();
@@ -46,7 +46,7 @@ contract Bootstrap is Test {
         bytes memory func = abi.encodeWithSelector(Counter.increment.selector);
         bytes memory callData = abi.encodeWithSelector(BaseLightAccount.execute.selector, dest, value, func);
         bytes memory signature;
-        PackedUserOperation memory op = PackedUserOperation({
+        UserOperation memory op = UserOperation({
             sender: user,
             nonce: 1,
             initCode: initCode,
