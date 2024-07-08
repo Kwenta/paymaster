@@ -8,8 +8,6 @@ import {console} from "forge-std/console.sol";
 /// @notice Responsible for paying tx gas fees using trader margin
 /// @author tommyrharper (zeroknowledgeltd@gmail.com)
 contract MarginPaymaster is IPaymaster {
-    uint256 public number;
-
     function validatePaymasterUserOp(
         UserOperation calldata,
         bytes32,
@@ -26,9 +24,5 @@ contract MarginPaymaster is IPaymaster {
     function postOp(PostOpMode, bytes calldata, uint256) external {
         // assert(msg.sender == entryPoint)
         console.log("postOp");
-    }
-
-    function increment() public {
-        number++;
     }
 }

@@ -12,8 +12,5 @@ contract MarginPaymasterTest is Bootstrap {
         initializeLocal();
     }
 
-    function testIncrement() public {
-        marginPaymaster.increment();
-        assertEq(marginPaymaster.number(), 1);
-    }
+    function testSetupWorks() public {}
 }
