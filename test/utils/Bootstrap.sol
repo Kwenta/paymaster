@@ -54,6 +54,20 @@ contract Bootstrap is Test {
         }
 
         uint256 nonce = entryPoint.getNonce(sender, 0);
+        bytes memory signature;
+        UserOperation memory userOp = UserOperation({
+            sender: sender,
+            nonce: nonce,
+            initCode: initCode,
+            callData: abi.encodeWithSelector(Account.execute.selector),
+            callGasLimit: 800_000,
+            verificationGasLimit: 800_000,
+            preVerificationGas: 200_000,
+            maxFeePerGas: 10 gwei,
+            maxPriorityFeePerGas: 10 gwei,
+            paymasterAndData: abi.encode(address(marginPaymaster)),
+            signature: signature
+        });
 
         // uint256 accountSalt = 1;
         // bytes memory initCode = abi.encodeWithSelector(

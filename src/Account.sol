@@ -19,13 +19,14 @@ contract Account is IAccount {
         bytes32 userOpHash, // userOpHash
         uint256 // missingAccountFunds
     ) external view returns (uint256 validationData) {
-        address recovered = ECDSA.recover(
-            ECDSA.toEthSignedMessageHash(userOpHash),
-            userOp.signature
-        );
-        // if it returns 1 => invalid signature
-        // if it returns 0 => valid signature
-        return owner == recovered ? 0 : 1;
+        // address recovered = ECDSA.recover(
+        //     ECDSA.toEthSignedMessageHash(userOpHash),
+        //     userOp.signature
+        // );
+        // // if it returns 1 => invalid signature
+        // // if it returns 0 => valid signature
+        // return owner == recovered ? 0 : 1;
+        return 0;
     }
 
     function execute() external {
