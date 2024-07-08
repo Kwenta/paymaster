@@ -4,7 +4,6 @@ pragma solidity 0.8.25;
 import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
 import {IEntryPoint} from "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
-import {Counter} from "test/utils/Counter.sol";
 import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, Setup} from "script/Deploy.s.sol";
 import {AccountFactory, Account} from "src/Account.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
@@ -13,7 +12,6 @@ import {console} from "lib/forge-std/src/console.sol";
 contract Bootstrap is Test {
     error SenderAddressResult(address sender);
 
-    Counter counter = new Counter();
     MarginPaymaster internal marginPaymaster;
     EntryPoint internal entryPoint;
     AccountFactory internal accountFactory;
