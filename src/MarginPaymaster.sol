@@ -15,7 +15,7 @@ contract MarginPaymaster is IPaymaster {
         uint256
     ) external returns (bytes memory context, uint256 validationData) {}
 
-    function postOp(PostOpMode, bytes calldata, uint256, uint256) external {}
+    function postOp(PostOpMode, bytes calldata, uint256) external {}
 
     function increment() public {
         number++;
