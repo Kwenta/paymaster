@@ -25,10 +25,10 @@ contract Bootstrap is Test {
     UserOperation[] ops;
 
     function initializeLocal() internal {
-        // BootstrapLocal bootstrap = new BootstrapLocal();
-        // address marginPaymasterAddress = bootstrap.init();
+        BootstrapLocal bootstrap = new BootstrapLocal();
+        address marginPaymasterAddress = bootstrap.init();
 
-        // marginPaymaster = MarginPaymaster(marginPaymasterAddress);
+        marginPaymaster = MarginPaymaster(marginPaymasterAddress);
         // entryPoint = new EntryPoint();
         // lightAccountFactory = new LightAccountFactory(
         //     address(this),
