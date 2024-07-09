@@ -16,6 +16,11 @@ interface IPerpsMarketProxy {
         address user
     ) external;
 
+    function getCollateralAmount(
+        uint128 accountId,
+        uint128 synthMarketId
+    ) external view returns (uint256);
+
     /// @notice Returns the address that owns a given account, as recorded by the system.
     /// @param accountId The account id whose owner is being retrieved.
     /// @return owner The owner of the given account id.

@@ -11,7 +11,9 @@ contract MarginPaymasterTest is Bootstrap {
     uint256 constant BASE_BLOCK_NUMBER = 16841532;
     UserOperation internal userOp;
     bytes32 internal constant ADMIN_PERMISSION = "ADMIN";
-    address constant USDC_MASTER_MINTER = 0x2230393EDAD0299b7E7B59F20AA856cD1bEd52e1;
+    address constant USDC_MASTER_MINTER =
+        0x2230393EDAD0299b7E7B59F20AA856cD1bEd52e1;
+    uint128 constant sUSDId = 0;
 
     function setUp() public {
         /// @dev uncomment the following line to test in a forked environment
@@ -108,6 +110,13 @@ contract MarginPaymasterTest is Bootstrap {
                 marginPaymasterAddress
             )
         );
+        assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
+        assertEq(usdc.balanceOf(sender), 0);
+        uint256 colAmount = perpsMarketProxy.getCollateralAmount(
+            accountId,
+            sUSDId
+        );
+        assertEq(colAmount, 5 ether);
     }
 
     function testOnlyEntryPointCanCallValidatePaymasterUserOp() public {
