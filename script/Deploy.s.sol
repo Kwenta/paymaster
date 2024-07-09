@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.25;
+pragma solidity 0.8.20;
 
 import {BaseGoerliParameters} from "script/utils/parameters/BaseGoerliParameters.sol";
 import {BaseParameters} from "script/utils/parameters/BaseParameters.sol";
