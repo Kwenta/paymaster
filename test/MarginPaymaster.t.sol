@@ -11,6 +11,7 @@ contract MarginPaymasterTest is Bootstrap {
     uint256 constant BASE_BLOCK_NUMBER = 16841532;
     UserOperation internal userOp;
     bytes32 internal constant ADMIN_PERMISSION = "ADMIN";
+    address constant USDC_MASTER_MINTER = 0x2230393EDAD0299b7E7B59F20AA856cD1bEd52e1;
 
     function setUp() public {
         /// @dev uncomment the following line to test in a forked environment
@@ -23,7 +24,7 @@ contract MarginPaymasterTest is Bootstrap {
             perpsMarketProxyAddress,
             marginPaymasterAddress,
             smartMarginV3Address,
-            usdc
+            usdcAddress
         );
         vm.deal(address(this), initialPaymasterBalance);
         entryPoint.depositTo{value: initialPaymasterBalance}(
@@ -92,6 +93,9 @@ contract MarginPaymasterTest is Bootstrap {
         userOp.callData = abi.encodeWithSelector(Account.setupAccount.selector);
         ops.push(userOp);
 
+        mintUSDC(address(this), 1000 * 1e6);
+        usdc.approve(sender, type(uint256).max);
+
         vm.prank(bundler);
         entryPoint.handleOps(ops, bundler);
 
@@ -133,6 +137,12 @@ contract MarginPaymasterTest is Bootstrap {
         assembly {
             addr := mload(add(bys, 20))
         }
+    }
+
+    function mintUSDC(address to, uint256 amount) private {
+        vm.prank(USDC_MASTER_MINTER);
+        usdc.configureMinter(address(this), amount);
+        usdc.mint(to, amount);
     }
 
     function getDummyUserOp() private pure returns (UserOperation memory) {

@@ -7,6 +7,7 @@ import {IEntryPoint} from "lib/account-abstraction/contracts/interfaces/IEntryPo
 import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, BaseParameters, Setup} from "script/Deploy.s.sol";
 import {IPerpsMarketProxy} from "src/interfaces/synthetix/IPerpsMarketProxy.sol";
 import {AccountFactory, Account} from "src/Account.sol";
+import {IUSDC} from "test/utils/interfaces/IUSDC.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
 import {console} from "lib/forge-std/src/console.sol";
 
@@ -38,7 +39,8 @@ contract Bootstrap is Test {
     address internal pDAOAddress;
     address internal smartMarginV3Address;
     address payable internal canonicalEntryPointAddress;
-    address internal usdc;
+    address internal usdcAddress;
+    IUSDC internal usdc;
     uint128 internal sUSDCId;
 
     function initializeLocal() internal {
@@ -72,7 +74,8 @@ contract Bootstrap is Test {
         smartMarginV3Address = _smartMarginV3Address;
         canonicalEntryPointAddress = payable(_canonicalEntryPointAddress);
         entryPoint = EntryPoint(canonicalEntryPointAddress);
-        usdc = _usdc;
+        usdcAddress = _usdc;
+        usdc = IUSDC(usdcAddress);
         sUSDCId = _sUSDCId;
 
         marginPaymasterAddress = _marginPaymasterAddress;

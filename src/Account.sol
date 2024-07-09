@@ -44,7 +44,7 @@ contract Account is IAccount, IERC721Receiver {
             user: marginPaymaster
         });
         int256 minDeposit = int256(5 * 10 ** USDC_DECIMALS);
-
+        usdc.transferFrom(owner, address(this), uint256(minDeposit));
         // smartMarginV3.modifyCollateralZap(accountId, minDeposit);
     }
 
