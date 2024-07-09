@@ -43,6 +43,11 @@ contract Account is IAccount, IERC721Receiver {
             permission: ADMIN_PERMISSION,
             user: marginPaymaster
         });
+        perpsMarketSNXV3.grantPermission({
+            accountId: accountId,
+            permission: ADMIN_PERMISSION,
+            user: address(smartMarginV3)
+        });
         int256 minDeposit = int256(5 * 10 ** USDC_DECIMALS);
         usdc.transferFrom(owner, address(this), uint256(minDeposit));
         usdc.approve(address(smartMarginV3), uint256(minDeposit));
