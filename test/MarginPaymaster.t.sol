@@ -4,6 +4,7 @@ pragma solidity 0.8.25;
 import {Bootstrap} from "test/utils/Bootstrap.sol";
 import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
 import {AccountFactory, Account} from "src/Account.sol";
+import {MarginPaymaster, IPaymaster} from "src/MarginPaymaster.sol";
 
 contract MarginPaymasterTest is Bootstrap {
     uint256 constant BASE_BLOCK_NUMBER = 16841532;
@@ -80,11 +81,49 @@ contract MarginPaymasterTest is Bootstrap {
         assertEq(account.count(), 1);
     }
 
+    function testOnlyEntryPointCanCallValidatePaymasterUserOp() public {
+        // Create a dummy UserOperation
+        UserOperation memory userOp = getDummyUserOp();
+
+        // Try to call validatePaymasterUserOp from a non-entry point address
+        vm.prank(address(0x1234)); // Use a random address
+        vm.expectRevert(MarginPaymaster.InvalidEntryPoint.selector);
+        marginPaymaster.validatePaymasterUserOp(userOp, bytes32(0), 0);
+    }
+
+    function testOnlyEntryPointCanCallPostOp() public {
+        // Create a dummy PostOpMode and context
+        IPaymaster.PostOpMode mode = IPaymaster.PostOpMode(0);
+        bytes memory context = "";
+
+        // Try to call postOp from a non-entry point address
+        vm.prank(address(0x1234)); // Use a random address
+        vm.expectRevert(MarginPaymaster.InvalidEntryPoint.selector);
+        marginPaymaster.postOp(mode, context, 0);
+    }
+
     function bytesToAddress(
         bytes memory bys
     ) private pure returns (address addr) {
         assembly {
             addr := mload(add(bys, 20))
         }
+    }
+
+    function getDummyUserOp() private pure returns (UserOperation memory) {
+        return
+            UserOperation({
+                sender: address(0),
+                nonce: 0,
+                initCode: "",
+                callData: "",
+                callGasLimit: 0,
+                verificationGasLimit: 0,
+                preVerificationGas: 0,
+                maxFeePerGas: 0,
+                maxPriorityFeePerGas: 0,
+                paymasterAndData: "",
+                signature: ""
+            });
     }
 }
