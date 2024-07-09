@@ -63,8 +63,8 @@ contract MarginPaymasterTest is Bootstrap {
             callGasLimit: 2_000_000,
             verificationGasLimit: 2_000_000,
             preVerificationGas: 200_000,
-            maxFeePerGas: 10 gwei,
-            maxPriorityFeePerGas: 10 gwei,
+            maxFeePerGas: 0.1 gwei,
+            maxPriorityFeePerGas: 0.1 gwei,
             paymasterAndData: abi.encodePacked(address(marginPaymaster)),
             signature: signature
         });
@@ -113,13 +113,13 @@ contract MarginPaymasterTest is Bootstrap {
         );
         assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
         assertEq(usdc.balanceOf(sender), 0);
-        assertLt(usdc.balanceOf(marginPaymasterAddress), 4e6);
+        assertLt(usdc.balanceOf(marginPaymasterAddress), 1e6);
         assertGt(usdc.balanceOf(marginPaymasterAddress), 0);
         uint256 colAmount = perpsMarketProxy.getCollateralAmount(
             accountId,
             sUSDId
         );
-        assertEq(colAmount, 1 ether);
+        assertEq(colAmount, 4 ether);
     }
 
     function testOnlyEntryPointCanCallValidatePaymasterUserOp() public {
