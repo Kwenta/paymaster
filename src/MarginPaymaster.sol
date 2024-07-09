@@ -50,5 +50,7 @@ contract MarginPaymaster is IPaymaster, Zap {
         uint128 accountId = Account(sender).accountId();
         int256 take = -1 ether;
         perpsMarketSNXV3.modifyCollateral(accountId, sUSDId, take);
+        uint256 takeAbs = uint256(take*-1);
+        uint256 usdcAmount = _zapOut(takeAbs);
     }
 }
