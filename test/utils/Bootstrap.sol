@@ -7,6 +7,7 @@ import {IEntryPoint} from "lib/account-abstraction/contracts/interfaces/IEntryPo
 import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, BaseParameters, Setup} from "script/Deploy.s.sol";
 import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 import {IV3SwapRouter} from "src/interfaces/external/IV3SwapRouter.sol";
+import {IWETH9} from "src/interfaces/external/IWETH9.sol";
 import {AccountFactory, Account} from "src/Account.sol";
 import {IUSDC} from "test/utils/interfaces/IUSDC.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
@@ -44,6 +45,7 @@ contract Bootstrap is Test {
     IUSDC internal usdc;
     uint128 internal sUSDCId;
     IV3SwapRouter internal uniV3Router;
+    IWETH9 internal weth;
 
     function initializeLocal() internal {
         entryPoint = new EntryPoint();
@@ -56,6 +58,7 @@ contract Bootstrap is Test {
             address(0),
             address(0),
             0,
+            address(0),
             address(0)
         );
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
@@ -73,7 +76,8 @@ contract Bootstrap is Test {
             address _canonicalEntryPointAddress,
             address _usdc,
             uint128 _sUSDCId,
-            address _uniswapRouter
+            address _uniswapRouter,
+            address _weth
         ) = bootstrap.init();
         perpsMarketProxyAddress = _perpsMarketProxyAddress;
         perpsMarketProxy = IPerpsMarketProxy(perpsMarketProxyAddress);
@@ -87,6 +91,7 @@ contract Bootstrap is Test {
         usdc = IUSDC(usdcAddress);
         sUSDCId = _sUSDCId;
         uniV3Router = IV3SwapRouter(_uniswapRouter);
+        weth = IWETH9(_weth);
 
         marginPaymasterAddress = _marginPaymasterAddress;
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
@@ -114,7 +119,8 @@ contract BootstrapLocal is Setup {
         address sUSDProxy,
         address spotMarketProxy,
         uint128 sUSDCId,
-        address uniswapRouter
+        address uniswapRouter,
+        address weth
     ) public returns (address) {
         address marginPaymasterAddress = Setup.deploySystem(
             entryPoint,
@@ -124,7 +130,8 @@ contract BootstrapLocal is Setup {
             sUSDProxy,
             spotMarketProxy,
             sUSDCId,
-            uniswapRouter
+            uniswapRouter,
+            weth
         );
 
         return marginPaymasterAddress;
@@ -144,6 +151,7 @@ contract BootstrapBase is Setup, BaseParameters {
             address,
             address,
             uint128,
+            address,
             address
         )
     {
@@ -155,7 +163,8 @@ contract BootstrapBase is Setup, BaseParameters {
             USD_PROXY_ANDROMEDA,
             SPOT_MARKET_PROXY_ANDROMEDA,
             SUSDC_SPOT_MARKET_ID,
-            UNISWAP_ROUTER_02
+            UNISWAP_ROUTER_02,
+            WETH
         );
 
         return (
@@ -168,7 +177,8 @@ contract BootstrapBase is Setup, BaseParameters {
             CANONICAL_ENTRY_POINT,
             USDC,
             SUSDC_SPOT_MARKET_ID,
-            UNISWAP_ROUTER_02
+            UNISWAP_ROUTER_02,
+            WETH
         );
     }
 }
