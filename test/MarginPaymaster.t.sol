@@ -5,6 +5,7 @@ import {Bootstrap} from "test/utils/Bootstrap.sol";
 import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
 import {AccountFactory, Account} from "src/Account.sol";
 import {MarginPaymaster, IPaymaster} from "src/MarginPaymaster.sol";
+import {console} from "forge-std/console.sol";
 
 contract MarginPaymasterTest is Bootstrap {
     uint256 constant BASE_BLOCK_NUMBER = 16841532;
@@ -79,6 +80,16 @@ contract MarginPaymasterTest is Bootstrap {
         assertLt(balanceOfPaymasterAfter, balanceOfPaymasterBefore);
         assertGt(sender.code.length, 0);
         assertEq(account.count(), 1);
+    }
+
+    function testAccountSetup() public {
+        userOp.callData = abi.encodeWithSelector(Account.setupAccount.selector);
+        ops.push(userOp);
+
+        vm.prank(bundler);
+        entryPoint.handleOps(ops, bundler);
+
+        assertGt(account.accountId(), 0);
     }
 
     function testOnlyEntryPointCanCallValidatePaymasterUserOp() public {

@@ -5,6 +5,7 @@ import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/
 import {IEntryPoint} from "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
 import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, BaseParameters, Setup} from "script/Deploy.s.sol";
+import {IPerpsMarketProxy} from "src/interfaces/synthetix/IPerpsMarketProxy.sol";
 import {AccountFactory, Account} from "src/Account.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
 import {console} from "lib/forge-std/src/console.sol";
@@ -31,6 +32,7 @@ contract Bootstrap is Test {
     //////////////////////////////////////////////////////////////*/
 
     address internal perpsMarketProxyAddress;
+    IPerpsMarketProxy internal perpsMarketProxy;
     address internal spotMarketProxyAddress;
     address internal sUSDAddress;
     address internal pDAOAddress;
@@ -63,6 +65,7 @@ contract Bootstrap is Test {
             uint128 _sUSDCId
         ) = bootstrap.init();
         perpsMarketProxyAddress = _perpsMarketProxyAddress;
+        perpsMarketProxy = IPerpsMarketProxy(perpsMarketProxyAddress);
         spotMarketProxyAddress = _spotMarketProxyAddress;
         sUSDAddress = _sUSDAddress;
         pDAOAddress = _pDAOAddress;

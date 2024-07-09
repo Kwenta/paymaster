@@ -8,6 +8,7 @@ interface IPerpsMarketProxy {
     /*//////////////////////////////////////////////////////////////
                              ACCOUNT MODULE
     //////////////////////////////////////////////////////////////*/
+    function createAccount() external returns (uint128 accountId);
 
     /// @notice Returns the address that owns a given account, as recorded by the system.
     /// @param accountId The account id whose owner is being retrieved.
@@ -120,4 +121,11 @@ interface IPerpsMarketProxy {
         external
         view
         returns (uint256 maxMarketSize);
+
+
+    /*//////////////////////////////////////////////////////////////
+                                 ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    error InvalidTransferRecipient(address addr);
 }

@@ -5,15 +5,23 @@ import "@account-abstraction/contracts/core/EntryPoint.sol";
 import "@account-abstraction/contracts/interfaces/IAccount.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
+import {IERC721Receiver} from "lib/openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol";
+import {IPerpsMarketProxy} from "src/interfaces/synthetix/IPerpsMarketProxy.sol";
+import {console} from "forge-std/console.sol";
 
-contract Account is IAccount {
+contract Account is IAccount, IERC721Receiver {
     uint256 public count;
     address public owner;
-    address public perpsMarketSNXV3;
+    IPerpsMarketProxy public perpsMarketSNXV3;
+    uint128 public accountId;
 
     constructor(address _owner, address _perpsMarketSNXV3) {
         owner = _owner;
-        perpsMarketSNXV3 = _perpsMarketSNXV3;
+        perpsMarketSNXV3 = IPerpsMarketProxy(_perpsMarketSNXV3);
+    }
+
+    function setupAccount() external {
+        accountId = perpsMarketSNXV3.createAccount();
     }
 
     function validateUserOp(
@@ -33,6 +41,15 @@ contract Account is IAccount {
 
     function execute() external {
         count++;
+    }
+
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 }
 
