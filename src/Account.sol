@@ -51,7 +51,7 @@ contract Account is IAccount, IERC721Receiver {
         int256 minDeposit = int256(5 * 10 ** USDC_DECIMALS);
         usdc.transferFrom(owner, address(this), uint256(minDeposit));
         usdc.approve(address(smartMarginV3), uint256(minDeposit));
-        // smartMarginV3.modifyCollateralZap(accountId, minDeposit);
+        smartMarginV3.modifyCollateralZap(accountId, minDeposit);
     }
 
     function validateUserOp(
