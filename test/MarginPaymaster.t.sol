@@ -10,6 +10,7 @@ import {console} from "forge-std/console.sol";
 contract MarginPaymasterTest is Bootstrap {
     uint256 constant BASE_BLOCK_NUMBER = 16841532;
     UserOperation internal userOp;
+    bytes32 internal constant ADMIN_PERMISSION = "ADMIN";
 
     function setUp() public {
         /// @dev uncomment the following line to test in a forked environment
@@ -18,7 +19,10 @@ contract MarginPaymasterTest is Bootstrap {
 
         initializeBase();
 
-        accountFactory = new AccountFactory(perpsMarketProxyAddress);
+        accountFactory = new AccountFactory(
+            perpsMarketProxyAddress,
+            marginPaymasterAddress
+        );
         vm.deal(address(this), initialPaymasterBalance);
         entryPoint.depositTo{value: initialPaymasterBalance}(
             marginPaymasterAddress
@@ -89,7 +93,15 @@ contract MarginPaymasterTest is Bootstrap {
         vm.prank(bundler);
         entryPoint.handleOps(ops, bundler);
 
-        assertGt(account.accountId(), 0);
+        uint128 accountId = account.accountId();
+        assertGt(accountId, 0);
+        assertTrue(
+            perpsMarketProxy.hasPermission(
+                accountId,
+                ADMIN_PERMISSION,
+                marginPaymasterAddress
+            )
+        );
     }
 
     function testOnlyEntryPointCanCallValidatePaymasterUserOp() public {

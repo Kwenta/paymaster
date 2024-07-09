@@ -13,15 +13,27 @@ contract Account is IAccount, IERC721Receiver {
     uint256 public count;
     address public owner;
     IPerpsMarketProxy public perpsMarketSNXV3;
+    address public marginPaymaster;
     uint128 public accountId;
+    bytes32 internal constant ADMIN_PERMISSION = "ADMIN";
 
-    constructor(address _owner, address _perpsMarketSNXV3) {
+    constructor(
+        address _owner,
+        address _perpsMarketSNXV3,
+        address _marginPaymaster
+    ) {
         owner = _owner;
         perpsMarketSNXV3 = IPerpsMarketProxy(_perpsMarketSNXV3);
+        marginPaymaster = _marginPaymaster;
     }
 
     function setupAccount() external {
         accountId = perpsMarketSNXV3.createAccount();
+        perpsMarketSNXV3.grantPermission({
+            accountId: accountId,
+            permission: ADMIN_PERMISSION,
+            user: marginPaymaster
+        });
     }
 
     function validateUserOp(
@@ -55,9 +67,11 @@ contract Account is IAccount, IERC721Receiver {
 
 contract AccountFactory {
     address public perpsMarketSNXV3;
+    address public marginPaymaster;
 
-    constructor(address _perpsMarketSNXV3) {
+    constructor(address _perpsMarketSNXV3, address _marginPaymaster) {
         perpsMarketSNXV3 = _perpsMarketSNXV3;
+        marginPaymaster = _marginPaymaster;
     }
 
     function createAccount(address owner) external returns (address) {
@@ -66,7 +80,7 @@ contract AccountFactory {
         bytes32 salt = bytes32(uint256(uint160(owner)));
         bytes memory bytecode = abi.encodePacked(
             type(Account).creationCode,
-            abi.encode(owner, perpsMarketSNXV3)
+            abi.encode(owner, perpsMarketSNXV3, marginPaymaster)
         );
 
         // dont deploy if addr already exists
