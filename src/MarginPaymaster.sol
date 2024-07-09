@@ -5,13 +5,14 @@ import {IPaymaster, UserOperation} from "lib/account-abstraction/contracts/inter
 import {IPerpsMarketProxy} from "src/interfaces/synthetix/IPerpsMarketProxy.sol";
 import {IEngine} from "src/interfaces/IEngine.sol";
 import {Account} from "src/Account.sol";
+import {Zap} from "lib/zap/src/Zap.sol";
 
 import {console} from "forge-std/console.sol";
 
 /// @title Kwenta Paymaster Contract
 /// @notice Responsible for paying tx gas fees using trader margin
 /// @author tommyrharper (zeroknowledgeltd@gmail.com)
-contract MarginPaymaster is IPaymaster {
+contract MarginPaymaster is IPaymaster, Zap {
     address public immutable entryPoint;
     IEngine public immutable smartMarginV3;
     IPerpsMarketProxy public immutable perpsMarketSNXV3;
@@ -22,8 +23,12 @@ contract MarginPaymaster is IPaymaster {
     constructor(
         address _entryPoint,
         address _smartMarginV3,
-        address _perpsMarketSNXV3
-    ) {
+        address _perpsMarketSNXV3,
+        address _usdc,
+        address _sUSDProxy,
+        address _spotMarketProxy,
+        uint128 _sUSDCId
+    ) Zap(_usdc, _sUSDProxy, _spotMarketProxy, _sUSDCId) {
         entryPoint = _entryPoint;
         smartMarginV3 = IEngine(_smartMarginV3);
         perpsMarketSNXV3 = IPerpsMarketProxy(_perpsMarketSNXV3);

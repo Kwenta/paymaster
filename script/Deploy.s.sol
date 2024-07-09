@@ -15,12 +15,20 @@ contract Setup is Script {
     function deploySystem(
         address entryPoint,
         address smartMarginV3,
-        address perpsMarketSNXV3
+        address perpsMarketSNXV3,
+        address usdc,
+        address sUSDProxy,
+        address spotMarketProxy,
+        uint128 sUSDCId
     ) public returns (address) {
         MarginPaymaster marginPaymaster = new MarginPaymaster(
             entryPoint,
             smartMarginV3,
-            perpsMarketSNXV3
+            perpsMarketSNXV3,
+            usdc,
+            sUSDProxy,
+            spotMarketProxy,
+            sUSDCId
         );
         return address(marginPaymaster);
     }
@@ -37,7 +45,11 @@ contract DeployBase is Setup, BaseParameters {
         Setup.deploySystem(
             CANONICAL_ENTRY_POINT,
             SMART_MARGIN_V3,
-            PERPS_MARKET_PROXY_ANDROMEDA
+            PERPS_MARKET_PROXY_ANDROMEDA,
+            USDC,
+            USD_PROXY_ANDROMEDA,
+            SPOT_MARKET_PROXY_ANDROMEDA,
+            SUSDC_SPOT_MARKET_ID
         );
 
         vm.stopBroadcast();
