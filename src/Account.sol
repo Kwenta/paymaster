@@ -12,7 +12,6 @@ import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.so
 import {console} from "forge-std/console.sol";
 
 contract Account is IAccount, IERC721Receiver {
-    uint256 public count;
     address public owner;
     IPerpsMarketProxy public perpsMarketSNXV3;
     address public marginPaymaster;
@@ -67,10 +66,6 @@ contract Account is IAccount, IERC721Receiver {
         // // if it returns 0 => valid signature
         // return owner == recovered ? 0 : 1;
         return 0;
-    }
-
-    function execute() external {
-        count++;
     }
 
     function onERC721Received(
