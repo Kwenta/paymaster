@@ -9,9 +9,11 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 contract Account is IAccount {
     uint256 public count;
     address public owner;
+    address public perpsMarketSNXV3;
 
-    constructor(address _owner) {
+    constructor(address _owner, address _perpsMarketSNXV3) {
         owner = _owner;
+        perpsMarketSNXV3 = _perpsMarketSNXV3;
     }
 
     function validateUserOp(
@@ -35,13 +37,19 @@ contract Account is IAccount {
 }
 
 contract AccountFactory {
+    address public perpsMarketSNXV3;
+
+    constructor(address _perpsMarketSNXV3) {
+        perpsMarketSNXV3 = _perpsMarketSNXV3;
+    }
+
     function createAccount(address owner) external returns (address) {
         // create2 is needed so it is deterministic and can have the gas useage confirmed by the bundler (disallowed opcodes)
         // amount, salt, bytecode
         bytes32 salt = bytes32(uint256(uint160(owner)));
         bytes memory bytecode = abi.encodePacked(
             type(Account).creationCode,
-            abi.encode(owner)
+            abi.encode(owner, perpsMarketSNXV3)
         );
 
         // dont deploy if addr already exists
