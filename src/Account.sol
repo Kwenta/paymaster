@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 import {IERC721Receiver} from "lib/openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol";
 import {IPerpsMarketProxy} from "src/interfaces/synthetix/IPerpsMarketProxy.sol";
+import {IEngine} from "src/interfaces/IEngine.sol";
 import {console} from "forge-std/console.sol";
 
 contract Account is IAccount, IERC721Receiver {
@@ -14,17 +15,20 @@ contract Account is IAccount, IERC721Receiver {
     address public owner;
     IPerpsMarketProxy public perpsMarketSNXV3;
     address public marginPaymaster;
+    IEngine public smartMarginV3;
     uint128 public accountId;
     bytes32 internal constant ADMIN_PERMISSION = "ADMIN";
 
     constructor(
         address _owner,
         address _perpsMarketSNXV3,
-        address _marginPaymaster
+        address _marginPaymaster,
+        address _smartMarginV3
     ) {
         owner = _owner;
         perpsMarketSNXV3 = IPerpsMarketProxy(_perpsMarketSNXV3);
         marginPaymaster = _marginPaymaster;
+        smartMarginV3 = IEngine(_smartMarginV3);
     }
 
     function setupAccount() external {
@@ -56,11 +60,11 @@ contract Account is IAccount, IERC721Receiver {
     }
 
     function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
-    ) external returns (bytes4) {
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) external pure returns (bytes4) {
         return this.onERC721Received.selector;
     }
 }
@@ -68,10 +72,16 @@ contract Account is IAccount, IERC721Receiver {
 contract AccountFactory {
     address public perpsMarketSNXV3;
     address public marginPaymaster;
+    address public smartMarginV3;
 
-    constructor(address _perpsMarketSNXV3, address _marginPaymaster) {
+    constructor(
+        address _perpsMarketSNXV3,
+        address _marginPaymaster,
+        address _smartMarginV3
+    ) {
         perpsMarketSNXV3 = _perpsMarketSNXV3;
         marginPaymaster = _marginPaymaster;
+        smartMarginV3 = _smartMarginV3;
     }
 
     function createAccount(address owner) external returns (address) {
@@ -80,7 +90,7 @@ contract AccountFactory {
         bytes32 salt = bytes32(uint256(uint160(owner)));
         bytes memory bytecode = abi.encodePacked(
             type(Account).creationCode,
-            abi.encode(owner, perpsMarketSNXV3, marginPaymaster)
+            abi.encode(owner, perpsMarketSNXV3, marginPaymaster, smartMarginV3)
         );
 
         // dont deploy if addr already exists

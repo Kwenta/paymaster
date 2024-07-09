@@ -21,7 +21,8 @@ contract MarginPaymasterTest is Bootstrap {
 
         accountFactory = new AccountFactory(
             perpsMarketProxyAddress,
-            marginPaymasterAddress
+            marginPaymasterAddress,
+            smartMarginV3Address
         );
         vm.deal(address(this), initialPaymasterBalance);
         entryPoint.depositTo{value: initialPaymasterBalance}(
@@ -106,12 +107,12 @@ contract MarginPaymasterTest is Bootstrap {
 
     function testOnlyEntryPointCanCallValidatePaymasterUserOp() public {
         // Create a dummy UserOperation
-        UserOperation memory userOp = getDummyUserOp();
+        UserOperation memory op = getDummyUserOp();
 
         // Try to call validatePaymasterUserOp from a non-entry point address
         vm.prank(address(0x1234)); // Use a random address
         vm.expectRevert(MarginPaymaster.InvalidEntryPoint.selector);
-        marginPaymaster.validatePaymasterUserOp(userOp, bytes32(0), 0);
+        marginPaymaster.validatePaymasterUserOp(op, bytes32(0), 0);
     }
 
     function testOnlyEntryPointCanCallPostOp() public {
