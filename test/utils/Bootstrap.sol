@@ -4,7 +4,7 @@ pragma solidity 0.8.25;
 import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
 import {IEntryPoint} from "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
-import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, Setup} from "script/Deploy.s.sol";
+import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, BaseParameters, Setup} from "script/Deploy.s.sol";
 import {AccountFactory, Account} from "src/Account.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
 import {console} from "lib/forge-std/src/console.sol";
@@ -35,14 +35,18 @@ contract Bootstrap is Test {
     function initializeOptimismGoerli() internal {
         BootstrapOptimismGoerli bootstrap = new BootstrapOptimismGoerli();
         marginPaymasterAddress = bootstrap.init();
-
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
     }
 
     function initializeOptimism() internal {
         BootstrapOptimismGoerli bootstrap = new BootstrapOptimismGoerli();
         marginPaymasterAddress = bootstrap.init();
+        marginPaymaster = MarginPaymaster(marginPaymasterAddress);
+    }
 
+    function initializeBase() internal {
+        BootstrapBase bootstrap = new BootstrapBase();
+        marginPaymasterAddress = bootstrap.init();
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
     }
 
@@ -66,6 +70,14 @@ contract BootstrapOptimism is Setup, OptimismParameters {
 }
 
 contract BootstrapOptimismGoerli is Setup, OptimismGoerliParameters {
+    function init() public returns (address) {
+        address marginPaymasterAddress = Setup.deploySystem();
+
+        return marginPaymasterAddress;
+    }
+}
+
+contract BootstrapBase is Setup, BaseParameters {
     function init() public returns (address) {
         address marginPaymasterAddress = Setup.deploySystem();
 

@@ -13,7 +13,7 @@ contract MarginPaymasterTest is Bootstrap {
         /// at a specific block number
         vm.rollFork(BASE_BLOCK_NUMBER);
 
-        initializeLocal();
+        initializeBase();
 
         entryPoint = new EntryPoint();
         accountFactory = new AccountFactory();
