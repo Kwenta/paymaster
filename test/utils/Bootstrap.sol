@@ -48,6 +48,7 @@ contract Bootstrap is Test {
         BootstrapLocal bootstrap = new BootstrapLocal();
         marginPaymasterAddress = bootstrap.init(
             address(entryPoint),
+            address(0),
             address(0)
         );
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
@@ -98,11 +99,13 @@ contract Bootstrap is Test {
 contract BootstrapLocal is Setup {
     function init(
         address entryPoint,
-        address smartMarginV3
+        address smartMarginV3,
+        address perpsMarketSNXV3
     ) public returns (address) {
         address marginPaymasterAddress = Setup.deploySystem(
             entryPoint,
-            smartMarginV3
+            smartMarginV3,
+            perpsMarketSNXV3
         );
 
         return marginPaymasterAddress;
@@ -126,7 +129,8 @@ contract BootstrapBase is Setup, BaseParameters {
     {
         address marginPaymasterAddress = Setup.deploySystem(
             CANONICAL_ENTRY_POINT,
-            SMART_MARGIN_V3
+            SMART_MARGIN_V3,
+            PERPS_MARKET_PROXY_ANDROMEDA
         );
 
         return (

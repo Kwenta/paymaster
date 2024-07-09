@@ -14,11 +14,13 @@ import {MarginPaymaster} from "src/MarginPaymaster.sol";
 contract Setup is Script {
     function deploySystem(
         address entryPoint,
-        address smartMarginV3
+        address smartMarginV3,
+        address perpsMarketSNXV3
     ) public returns (address) {
         MarginPaymaster marginPaymaster = new MarginPaymaster(
             entryPoint,
-            smartMarginV3
+            smartMarginV3,
+            perpsMarketSNXV3
         );
         return address(marginPaymaster);
     }
@@ -32,7 +34,11 @@ contract DeployBase is Setup, BaseParameters {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        Setup.deploySystem(CANONICAL_ENTRY_POINT, SMART_MARGIN_V3);
+        Setup.deploySystem(
+            CANONICAL_ENTRY_POINT,
+            SMART_MARGIN_V3,
+            PERPS_MARKET_PROXY_ANDROMEDA
+        );
 
         vm.stopBroadcast();
     }

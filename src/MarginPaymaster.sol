@@ -10,28 +10,35 @@ import {console} from "forge-std/console.sol";
 contract MarginPaymaster is IPaymaster {
     address public immutable entryPoint;
     address public immutable smartMarginV3;
+    address public immutable perpsMarketSNXV3;
 
     error InvalidEntryPoint();
 
-    constructor(address _entryPoint, address _smartMarginV3) {
+    constructor(
+        address _entryPoint,
+        address _smartMarginV3,
+        address _perpsMarketSNXV3
+    ) {
         entryPoint = _entryPoint;
         smartMarginV3 = _smartMarginV3;
+        perpsMarketSNXV3 = _perpsMarketSNXV3;
     }
 
     function validatePaymasterUserOp(
-        UserOperation calldata,
+        UserOperation calldata userOp,
         bytes32,
         uint256
     ) external returns (bytes memory context, uint256 validationData) {
         if (msg.sender != entryPoint) revert InvalidEntryPoint();
         console.log("validatePaymasterUserOp");
         // context = new bytes(0); // passed to the postOp method
-        context = "yo"; // passed to the postOp method
+        context = abi.encode(userOp.sender); // passed to the postOp method
         validationData = 0; // special value means no validation
     }
 
-    function postOp(PostOpMode, bytes calldata, uint256) external {
+    function postOp(PostOpMode, bytes calldata context, uint256) external {
         if (msg.sender != entryPoint) revert InvalidEntryPoint();
-        console.log("postOp");
+        address sender = abi.decode(context, (address));
+        console.log("postOp", sender);
     }
 }
