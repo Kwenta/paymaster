@@ -40,6 +40,7 @@ contract MarginPaymaster is IPaymaster, Zap {
         perpsMarketSNXV3 = IPerpsMarketProxy(_perpsMarketSNXV3);
         uniV3Router = IV3SwapRouter(_uniV3Router);
         weth = IWETH9(_weth);
+        _USDC.approve(_uniV3Router, type(uint256).max);
     }
 
     function validatePaymasterUserOp(
@@ -52,24 +53,27 @@ contract MarginPaymaster is IPaymaster, Zap {
         validationData = 0; // 0 means accept sponsorship, 1 means reject
     }
 
-    function postOp(PostOpMode, bytes calldata context, uint256) external {
+    function postOp(PostOpMode, bytes calldata context, uint256 actualGasCost) external {
         if (msg.sender != entryPoint) revert InvalidEntryPoint();
         address sender = abi.decode(context, (address));
         uint128 accountId = Account(sender).accountId();
-        int256 take = -1 ether;
+        int256 take = -4 ether;
         perpsMarketSNXV3.modifyCollateral(accountId, sUSDId, take);
         uint256 takeAbs = uint256(take*-1);
         uint256 usdcAmount = _zapOut(takeAbs);
-        // IV3SwapRouter.ExactOutputSingleParams memory params = IV3SwapRouter.ExactOutputSingleParams({
-        //     tokenIn: address(_USDC),
-        //     tokenOut: address(weth),
-        //     // note: aerdrome actually has higher liquidity https://www.geckoterminal.com/base/pools/0xb2cc224c1c9fee385f8ad6a55b4d94e92359dc59
-        //     fee: 500, // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
-        //     recipient: address(this),
-        //     amountOut: 1,
-        //     amountInMaximum: type(uint256).max,
-        //     sqrtPriceLimitX96: 0
-        // });
-        // uniV3Router.exactOutputSingle(params);
+        console.log("actualGasCost", actualGasCost); // 21690660000000000 = 0.02169 ETH
+
+        IV3SwapRouter.ExactOutputSingleParams memory params = IV3SwapRouter.ExactOutputSingleParams({
+            tokenIn: address(_USDC),
+            tokenOut: address(weth),
+            // note: aerdrome actually has higher liquidity https://www.geckoterminal.com/base/pools/0xb2cc224c1c9fee385f8ad6a55b4d94e92359dc59
+            fee: 500, // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
+            recipient: address(this),
+            // amountOut: actualGasCost,
+            amountOut: 10,
+            amountInMaximum: usdcAmount,
+            sqrtPriceLimitX96: 0
+        });
+        uniV3Router.exactOutputSingle(params);
     }
 }
