@@ -13,6 +13,7 @@ contract Bootstrap is Test {
     error SenderAddressResult(address sender);
 
     MarginPaymaster internal marginPaymaster;
+    address internal marginPaymasterAddress;
     EntryPoint internal entryPoint;
     AccountFactory internal accountFactory;
     Account internal account;
@@ -21,90 +22,26 @@ contract Bootstrap is Test {
     address payable user = payable(vm.addr(0x1234));
     address payable bundler = payable(vm.addr(0x12345));
     uint256 internal initialPaymasterBalance = 10 ether;
+    address internal sender;
 
     UserOperation[] ops;
 
     function initializeLocal() internal {
         BootstrapLocal bootstrap = new BootstrapLocal();
-        address marginPaymasterAddress = bootstrap.init();
-
+        marginPaymasterAddress = bootstrap.init();
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
-        entryPoint = new EntryPoint();
-        accountFactory = new AccountFactory();
-        vm.deal(address(this), initialPaymasterBalance);
-        entryPoint.depositTo{value: initialPaymasterBalance}(marginPaymasterAddress);
-
-        bytes memory initCode = abi.encodePacked(
-            address(accountFactory),
-            abi.encodeCall(accountFactory.createAccount, (address(this)))
-        );
-
-        address sender;
-        try entryPoint.getSenderAddress(initCode) {
-            assert(false);
-        } catch (bytes memory reason) {
-            bytes memory result = new bytes(20);
-            assembly {
-                // Copy the last 20 bytes from `reason` to `result`
-                mstore(
-                    add(result, 32),
-                    mload(add(add(reason, 32), sub(mload(reason), 20)))
-                )
-            }
-            sender = bytesToAddress(result);
-        }
-        account = Account(sender);
-
-        uint256 nonce = entryPoint.getNonce(sender, 0);
-        bytes memory signature;
-        UserOperation memory userOp = UserOperation({
-            sender: sender,
-            nonce: nonce,
-            initCode: initCode,
-            callData: abi.encodeWithSelector(Account.execute.selector),
-            callGasLimit: 800_000,
-            verificationGasLimit: 800_000,
-            preVerificationGas: 200_000,
-            maxFeePerGas: 10 gwei,
-            maxPriorityFeePerGas: 10 gwei,
-            paymasterAndData: abi.encodePacked(address(marginPaymaster)),
-            signature: signature
-        });
-
-        ops.push(userOp);
-
-        assertEq(sender.code.length, 0);
-        assertEq(sender.balance, 0);
-        uint256 balanceOfPaymasterBefore = entryPoint.balanceOf(address(marginPaymaster));
-        assertEq(balanceOfPaymasterBefore, initialPaymasterBalance);
-
-        vm.prank(bundler);
-        entryPoint.handleOps(ops, bundler);
-
-
-        uint256 balanceOfPaymasterAfter = entryPoint.balanceOf(address(marginPaymaster));
-        assertLt(balanceOfPaymasterAfter, balanceOfPaymasterBefore);
-
-        assertGt(sender.code.length, 0);
-        assertEq(account.count(), 1);
-    }
-
-    function bytesToAddress(bytes memory bys) private pure returns (address addr) {
-        assembly {
-            addr := mload(add(bys, 20))
-        }
     }
 
     function initializeOptimismGoerli() internal {
         BootstrapOptimismGoerli bootstrap = new BootstrapOptimismGoerli();
-        address marginPaymasterAddress = bootstrap.init();
+        marginPaymasterAddress = bootstrap.init();
 
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
     }
 
     function initializeOptimism() internal {
         BootstrapOptimismGoerli bootstrap = new BootstrapOptimismGoerli();
-        address marginPaymasterAddress = bootstrap.init();
+        marginPaymasterAddress = bootstrap.init();
 
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
     }
