@@ -116,7 +116,7 @@ contract MarginPaymasterTest is Bootstrap {
             accountId,
             sUSDId
         );
-        assertEq(colAmount, 5 ether);
+        assertEq(colAmount, 4 ether);
     }
 
     function testOnlyEntryPointCanCallValidatePaymasterUserOp() public {

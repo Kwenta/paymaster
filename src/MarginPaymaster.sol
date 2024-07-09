@@ -4,6 +4,7 @@ pragma solidity 0.8.25;
 import {IPaymaster, UserOperation} from "lib/account-abstraction/contracts/interfaces/IPaymaster.sol";
 import {IPerpsMarketProxy} from "src/interfaces/synthetix/IPerpsMarketProxy.sol";
 import {IEngine} from "src/interfaces/IEngine.sol";
+import {Account} from "src/Account.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -14,6 +15,7 @@ contract MarginPaymaster is IPaymaster {
     address public immutable entryPoint;
     IEngine public immutable smartMarginV3;
     IPerpsMarketProxy public immutable perpsMarketSNXV3;
+    uint128 public constant sUSDId = 0;
 
     error InvalidEntryPoint();
 
@@ -33,15 +35,15 @@ contract MarginPaymaster is IPaymaster {
         uint256
     ) external returns (bytes memory context, uint256 validationData) {
         if (msg.sender != entryPoint) revert InvalidEntryPoint();
-        console.log("validatePaymasterUserOp");
-        // context = new bytes(0); // passed to the postOp method
         context = abi.encode(userOp.sender); // passed to the postOp method
-        validationData = 0; // special value means no validation
+        validationData = 0; // 0 means accept sponsorship, 1 means reject
     }
 
     function postOp(PostOpMode, bytes calldata context, uint256) external {
         if (msg.sender != entryPoint) revert InvalidEntryPoint();
         address sender = abi.decode(context, (address));
-        console.log("postOp", sender);
+        uint128 accountId = Account(sender).accountId();
+        int256 take = -1 ether;
+        perpsMarketSNXV3.modifyCollateral(accountId, sUSDId, take);
     }
 }
