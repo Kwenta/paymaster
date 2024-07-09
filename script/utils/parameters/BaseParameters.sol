@@ -25,6 +25,8 @@ contract BaseParameters {
 
     address public constant SMART_MARGIN_V3 = 0xe331a7eeC851Ba702aA8BF43070a178451d6D28E;
 
+    address public constant CANONICAL_ENTRY_POINT = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
+
     // https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
     address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 

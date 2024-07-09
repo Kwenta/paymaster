@@ -26,6 +26,19 @@ contract Bootstrap is Test {
 
     UserOperation[] ops;
 
+    /*//////////////////////////////////////////////////////////////
+                        CHAIN SPECIFIC ADDRESSES
+    //////////////////////////////////////////////////////////////*/
+
+    address internal perpsMarketProxyAddress;
+    address internal spotMarketProxyAddress;
+    address internal sUSDAddress;
+    address internal pDAOAddress;
+    address internal smartMarginV3Address;
+    address payable internal canonicalEntryPointAddress;
+    address internal usdc;
+    uint128 internal sUSDCId;
+
     function initializeLocal() internal {
         BootstrapLocal bootstrap = new BootstrapLocal();
         marginPaymasterAddress = bootstrap.init();
@@ -53,9 +66,18 @@ contract Bootstrap is Test {
             address _sUSDAddress,
             address _pDAOAddress,
             address _smartMarginV3Address,
+            address _canonicalEntryPointAddress,
             address _usdc,
             uint128 _sUSDCId
         ) = bootstrap.init();
+        perpsMarketProxyAddress = _perpsMarketProxyAddress;
+        spotMarketProxyAddress = _spotMarketProxyAddress;
+        sUSDAddress = _sUSDAddress;
+        pDAOAddress = _pDAOAddress;
+        smartMarginV3Address = _smartMarginV3Address;
+        canonicalEntryPointAddress = payable(_canonicalEntryPointAddress);
+        usdc = _usdc;
+        sUSDCId = _sUSDCId;
 
         marginPaymasterAddress = _marginPaymasterAddress;
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
@@ -97,6 +119,7 @@ contract BootstrapBase is Setup, BaseParameters {
             address,
             address,
             address,
+            address,
             uint128
     ) {
         address marginPaymasterAddress = Setup.deploySystem();
@@ -108,6 +131,7 @@ contract BootstrapBase is Setup, BaseParameters {
             USD_PROXY_ANDROMEDA,
             PDAO,
             SMART_MARGIN_V3,
+            CANONICAL_ENTRY_POINT,
             USDC,
             SUSDC_SPOT_MARKET_ID
         );
