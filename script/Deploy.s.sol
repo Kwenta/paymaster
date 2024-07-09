@@ -22,7 +22,7 @@ contract Setup is Script {
         uint128 sUSDCId,
         address uniV3Router,
         address weth
-    ) public returns (address) {
+    ) public returns (address payable) {
         MarginPaymaster marginPaymaster = new MarginPaymaster(
             entryPoint,
             smartMarginV3,
@@ -34,7 +34,7 @@ contract Setup is Script {
             uniV3Router,
             weth
         );
-        return address(marginPaymaster);
+        return payable(address(marginPaymaster));
     }
 }
 

@@ -17,7 +17,7 @@ contract Bootstrap is Test {
     error SenderAddressResult(address sender);
 
     MarginPaymaster internal marginPaymaster;
-    address internal marginPaymasterAddress;
+    address payable internal marginPaymasterAddress;
     EntryPoint internal entryPoint;
     AccountFactory internal accountFactory;
     Account internal account;
@@ -67,7 +67,7 @@ contract Bootstrap is Test {
     function initializeBase() internal {
         BootstrapBase bootstrap = new BootstrapBase();
         (
-            address _marginPaymasterAddress,
+            address payable _marginPaymasterAddress,
             address _perpsMarketProxyAddress,
             address _spotMarketProxyAddress,
             address _sUSDAddress,
@@ -121,8 +121,8 @@ contract BootstrapLocal is Setup {
         uint128 sUSDCId,
         address uniswapRouter,
         address weth
-    ) public returns (address) {
-        address marginPaymasterAddress = Setup.deploySystem(
+    ) public returns (address payable) {
+        address payable marginPaymasterAddress = Setup.deploySystem(
             entryPoint,
             smartMarginV3,
             perpsMarketSNXV3,
@@ -142,7 +142,7 @@ contract BootstrapBase is Setup, BaseParameters {
     function init()
         public
         returns (
-            address,
+            address payable,
             address,
             address,
             address,
@@ -155,7 +155,7 @@ contract BootstrapBase is Setup, BaseParameters {
             address
         )
     {
-        address marginPaymasterAddress = Setup.deploySystem(
+        address payable marginPaymasterAddress = Setup.deploySystem(
             CANONICAL_ENTRY_POINT,
             SMART_MARGIN_V3,
             PERPS_MARKET_PROXY_ANDROMEDA,

@@ -75,5 +75,8 @@ contract MarginPaymaster is IPaymaster, Zap {
             sqrtPriceLimitX96: 0
         });
         uniV3Router.exactOutputSingle(params);
+        weth.withdraw(10);
     }
+
+    receive() external payable {}
 }
