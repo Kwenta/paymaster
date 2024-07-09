@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.20;
 
-import {IPerpsMarketProxy} from "src/interfaces/synthetix/IPerpsMarketProxy.sol";
+import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 
 /// @title Kwenta Smart Margin v3: Engine Interface
 /// @notice Conditional Order -> "co"

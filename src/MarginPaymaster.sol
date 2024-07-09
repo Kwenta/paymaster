@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import {IPaymaster, UserOperation} from "lib/account-abstraction/contracts/interfaces/IPaymaster.sol";
-import {IPerpsMarketProxy} from "src/interfaces/synthetix/IPerpsMarketProxy.sol";
+import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 import {IEngine} from "src/interfaces/IEngine.sol";
 import {Account} from "src/Account.sol";
 import {Zap} from "lib/zap/src/Zap.sol";

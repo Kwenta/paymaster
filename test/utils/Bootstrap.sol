@@ -5,7 +5,7 @@ import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/
 import {IEntryPoint} from "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
 import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, BaseParameters, Setup} from "script/Deploy.s.sol";
-import {IPerpsMarketProxy} from "src/interfaces/synthetix/IPerpsMarketProxy.sol";
+import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 import {AccountFactory, Account} from "src/Account.sol";
 import {IUSDC} from "test/utils/interfaces/IUSDC.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
