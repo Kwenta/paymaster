@@ -15,7 +15,8 @@ contract MarginPaymasterTest is Bootstrap {
 
         initializeBase();
 
-        entryPoint = EntryPoint(canonicalEntryPointAddress);
+        // entryPoint = EntryPoint(canonicalEntryPointAddress);
+        entryPoint = new EntryPoint();
         accountFactory = new AccountFactory();
         vm.deal(address(this), initialPaymasterBalance);
         entryPoint.depositTo{value: initialPaymasterBalance}(
