@@ -8,6 +8,7 @@ import {MarginPaymaster, IPaymaster} from "src/MarginPaymaster.sol";
 
 contract MarginPaymasterTest is Bootstrap {
     uint256 constant BASE_BLOCK_NUMBER = 16841532;
+    UserOperation internal userOp;
 
     function setUp() public {
         /// @dev uncomment the following line to test in a forked environment
@@ -44,7 +45,7 @@ contract MarginPaymasterTest is Bootstrap {
 
         uint256 nonce = entryPoint.getNonce(sender, 0);
         bytes memory signature;
-        UserOperation memory userOp = UserOperation({
+        userOp = UserOperation({
             sender: sender,
             nonce: nonce,
             initCode: initCode,
@@ -57,7 +58,9 @@ contract MarginPaymasterTest is Bootstrap {
             paymasterAndData: abi.encodePacked(address(marginPaymaster)),
             signature: signature
         });
+    }
 
+    function testAccountDeployed() public {
         ops.push(userOp);
 
         assertEq(sender.code.length, 0);
@@ -74,9 +77,6 @@ contract MarginPaymasterTest is Bootstrap {
             address(marginPaymaster)
         );
         assertLt(balanceOfPaymasterAfter, balanceOfPaymasterBefore);
-    }
-
-    function testAccountDeployed() public {
         assertGt(sender.code.length, 0);
         assertEq(account.count(), 1);
     }
