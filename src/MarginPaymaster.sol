@@ -2,6 +2,9 @@
 pragma solidity 0.8.25;
 
 import {IPaymaster, UserOperation} from "lib/account-abstraction/contracts/interfaces/IPaymaster.sol";
+import {IPerpsMarketProxy} from "src/interfaces/synthetix/IPerpsMarketProxy.sol";
+import {IEngine} from "src/interfaces/IEngine.sol";
+
 import {console} from "forge-std/console.sol";
 
 /// @title Kwenta Paymaster Contract
@@ -9,8 +12,8 @@ import {console} from "forge-std/console.sol";
 /// @author tommyrharper (zeroknowledgeltd@gmail.com)
 contract MarginPaymaster is IPaymaster {
     address public immutable entryPoint;
-    address public immutable smartMarginV3;
-    address public immutable perpsMarketSNXV3;
+    IEngine public immutable smartMarginV3;
+    IPerpsMarketProxy public immutable perpsMarketSNXV3;
 
     error InvalidEntryPoint();
 
@@ -20,8 +23,8 @@ contract MarginPaymaster is IPaymaster {
         address _perpsMarketSNXV3
     ) {
         entryPoint = _entryPoint;
-        smartMarginV3 = _smartMarginV3;
-        perpsMarketSNXV3 = _perpsMarketSNXV3;
+        smartMarginV3 = IEngine(_smartMarginV3);
+        perpsMarketSNXV3 = IPerpsMarketProxy(_perpsMarketSNXV3);
     }
 
     function validatePaymasterUserOp(
