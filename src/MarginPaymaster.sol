@@ -53,27 +53,32 @@ contract MarginPaymaster is IPaymaster, Zap {
         validationData = 0; // 0 means accept sponsorship, 1 means reject
     }
 
-    function postOp(PostOpMode, bytes calldata context, uint256 actualGasCost) external {
+    function postOp(
+        PostOpMode,
+        bytes calldata context,
+        uint256 actualGasCost
+    ) external {
         if (msg.sender != entryPoint) revert InvalidEntryPoint();
         address sender = abi.decode(context, (address));
         uint128 accountId = Account(sender).accountId();
         int256 take = -4 ether;
         perpsMarketSNXV3.modifyCollateral(accountId, sUSDId, take);
-        uint256 takeAbs = uint256(take*-1);
+        uint256 takeAbs = uint256(take * -1);
         uint256 usdcAmount = _zapOut(takeAbs);
         console.log("actualGasCost", actualGasCost); // 21690660000000000 = 0.02169 ETH
 
-        IV3SwapRouter.ExactOutputSingleParams memory params = IV3SwapRouter.ExactOutputSingleParams({
-            tokenIn: address(_USDC),
-            tokenOut: address(weth),
-            // note: aerdrome actually has higher liquidity https://www.geckoterminal.com/base/pools/0xb2cc224c1c9fee385f8ad6a55b4d94e92359dc59
-            fee: 500, // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
-            recipient: address(this),
-            // amountOut: actualGasCost,
-            amountOut: 10,
-            amountInMaximum: usdcAmount,
-            sqrtPriceLimitX96: 0
-        });
+        IV3SwapRouter.ExactOutputSingleParams memory params = IV3SwapRouter
+            .ExactOutputSingleParams({
+                tokenIn: address(_USDC),
+                tokenOut: address(weth),
+                // note: aerdrome actually has higher liquidity https://www.geckoterminal.com/base/pools/0xb2cc224c1c9fee385f8ad6a55b4d94e92359dc59
+                fee: 500, // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
+                recipient: address(this),
+                // amountOut: actualGasCost,
+                amountOut: 10,
+                amountInMaximum: usdcAmount,
+                sqrtPriceLimitX96: 0
+            });
         uniV3Router.exactOutputSingle(params);
         weth.withdraw(10);
     }

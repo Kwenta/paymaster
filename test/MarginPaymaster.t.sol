@@ -59,7 +59,7 @@ contract MarginPaymasterTest is Bootstrap {
             sender: sender,
             nonce: nonce,
             initCode: initCode,
-            callData:  abi.encodeWithSelector(Account.setupAccount.selector),
+            callData: abi.encodeWithSelector(Account.setupAccount.selector),
             callGasLimit: 2_000_000,
             verificationGasLimit: 2_000_000,
             preVerificationGas: 200_000,
