@@ -22,7 +22,8 @@ contract MarginPaymasterTest is Bootstrap {
         accountFactory = new AccountFactory(
             perpsMarketProxyAddress,
             marginPaymasterAddress,
-            smartMarginV3Address
+            smartMarginV3Address,
+            usdc
         );
         vm.deal(address(this), initialPaymasterBalance);
         entryPoint.depositTo{value: initialPaymasterBalance}(
