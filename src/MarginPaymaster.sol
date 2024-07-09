@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import {IPaymaster, UserOperation} from "lib/account-abstraction/contracts/interfaces/IPaymaster.sol";
 import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
+import {IV3SwapRouter} from "src/interfaces/external/IV3SwapRouter.sol";
 import {IEngine} from "src/interfaces/IEngine.sol";
 import {Account} from "src/Account.sol";
 import {Zap} from "lib/zap/src/Zap.sol";
@@ -16,6 +17,7 @@ contract MarginPaymaster is IPaymaster, Zap {
     address public immutable entryPoint;
     IEngine public immutable smartMarginV3;
     IPerpsMarketProxy public immutable perpsMarketSNXV3;
+    IV3SwapRouter public immutable uniV3Router;
     uint128 public constant sUSDId = 0;
 
     error InvalidEntryPoint();
@@ -27,11 +29,13 @@ contract MarginPaymaster is IPaymaster, Zap {
         address _usdc,
         address _sUSDProxy,
         address _spotMarketProxy,
-        uint128 _sUSDCId
+        uint128 _sUSDCId,
+        address _uniV3Router
     ) Zap(_usdc, _sUSDProxy, _spotMarketProxy, _sUSDCId) {
         entryPoint = _entryPoint;
         smartMarginV3 = IEngine(_smartMarginV3);
         perpsMarketSNXV3 = IPerpsMarketProxy(_perpsMarketSNXV3);
+        uniV3Router = IV3SwapRouter(_uniV3Router);
     }
 
     function validatePaymasterUserOp(
