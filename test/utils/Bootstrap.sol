@@ -40,20 +40,12 @@ contract Bootstrap is Test {
     uint128 internal sUSDCId;
 
     function initializeLocal() internal {
+        entryPoint = new EntryPoint();
         BootstrapLocal bootstrap = new BootstrapLocal();
-        marginPaymasterAddress = bootstrap.init();
-        marginPaymaster = MarginPaymaster(marginPaymasterAddress);
-    }
-
-    function initializeOptimismGoerli() internal {
-        BootstrapOptimismGoerli bootstrap = new BootstrapOptimismGoerli();
-        marginPaymasterAddress = bootstrap.init();
-        marginPaymaster = MarginPaymaster(marginPaymasterAddress);
-    }
-
-    function initializeOptimism() internal {
-        BootstrapOptimismGoerli bootstrap = new BootstrapOptimismGoerli();
-        marginPaymasterAddress = bootstrap.init();
+        marginPaymasterAddress = bootstrap.init(
+            address(entryPoint),
+            address(0)
+        );
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
     }
 
@@ -83,35 +75,37 @@ contract Bootstrap is Test {
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
     }
 
-    /// @dev add other networks here as needed (ex: Base, BaseGoerli)
+    // function initializeOptimismGoerli() internal {
+    //     BootstrapOptimismGoerli bootstrap = new BootstrapOptimismGoerli();
+    //     marginPaymasterAddress = bootstrap.init();
+    //     marginPaymaster = MarginPaymaster(marginPaymasterAddress);
+    // }
+
+    // function initializeOptimism() internal {
+    //     BootstrapOptimismGoerli bootstrap = new BootstrapOptimismGoerli();
+    //     marginPaymasterAddress = bootstrap.init();
+    //     marginPaymaster = MarginPaymaster(marginPaymasterAddress);
+    // }
 }
 
 contract BootstrapLocal is Setup {
-    function init() public returns (address) {
-        address marginPaymasterAddress = Setup.deploySystem();
-
-        return marginPaymasterAddress;
-    }
-}
-
-contract BootstrapOptimism is Setup, OptimismParameters {
-    function init() public returns (address) {
-        address marginPaymasterAddress = Setup.deploySystem();
-
-        return marginPaymasterAddress;
-    }
-}
-
-contract BootstrapOptimismGoerli is Setup, OptimismGoerliParameters {
-    function init() public returns (address) {
-        address marginPaymasterAddress = Setup.deploySystem();
+    function init(
+        address entryPoint,
+        address smartMarginV3
+    ) public returns (address) {
+        address marginPaymasterAddress = Setup.deploySystem(
+            entryPoint,
+            smartMarginV3
+        );
 
         return marginPaymasterAddress;
     }
 }
 
 contract BootstrapBase is Setup, BaseParameters {
-    function init() public returns (
+    function init()
+        public
+        returns (
             address,
             address,
             address,
@@ -121,8 +115,12 @@ contract BootstrapBase is Setup, BaseParameters {
             address,
             address,
             uint128
-    ) {
-        address marginPaymasterAddress = Setup.deploySystem();
+        )
+    {
+        address marginPaymasterAddress = Setup.deploySystem(
+            CANONICAL_ENTRY_POINT,
+            SMART_MARGIN_V3
+        );
 
         return (
             marginPaymasterAddress,
@@ -137,5 +135,21 @@ contract BootstrapBase is Setup, BaseParameters {
         );
     }
 }
+
+// contract BootstrapOptimism is Setup, OptimismParameters {
+//     function init() public returns (address) {
+//         address marginPaymasterAddress = Setup.deploySystem();
+
+//         return marginPaymasterAddress;
+//     }
+// }
+
+// contract BootstrapOptimismGoerli is Setup, OptimismGoerliParameters {
+//     function init() public returns (address) {
+//         address marginPaymasterAddress = Setup.deploySystem();
+
+//         return marginPaymasterAddress;
+//     }
+// }
 
 // add other networks here as needed (ex: Base, BaseGoerli)

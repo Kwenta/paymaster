@@ -8,6 +8,14 @@ import {console} from "forge-std/console.sol";
 /// @notice Responsible for paying tx gas fees using trader margin
 /// @author tommyrharper (zeroknowledgeltd@gmail.com)
 contract MarginPaymaster is IPaymaster {
+    address public immutable entryPoint;
+    address public immutable smartMarginV3;
+
+    constructor(address _entryPoint, address _smartMarginV3) {
+        entryPoint = _entryPoint;
+        smartMarginV3 = _smartMarginV3;
+    }
+
     function validatePaymasterUserOp(
         UserOperation calldata,
         bytes32,
