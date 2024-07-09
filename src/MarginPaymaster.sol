@@ -11,6 +11,8 @@ contract MarginPaymaster is IPaymaster {
     address public immutable entryPoint;
     address public immutable smartMarginV3;
 
+    error InvalidEntryPoint();
+
     constructor(address _entryPoint, address _smartMarginV3) {
         entryPoint = _entryPoint;
         smartMarginV3 = _smartMarginV3;
@@ -21,8 +23,7 @@ contract MarginPaymaster is IPaymaster {
         bytes32,
         uint256
     ) external returns (bytes memory context, uint256 validationData) {
-        // todo:
-        // assert(msg.sender == entryPoint)
+        if (msg.sender != entryPoint) revert InvalidEntryPoint();
         console.log("validatePaymasterUserOp");
         // context = new bytes(0); // passed to the postOp method
         context = "yo"; // passed to the postOp method
@@ -30,7 +31,7 @@ contract MarginPaymaster is IPaymaster {
     }
 
     function postOp(PostOpMode, bytes calldata, uint256) external {
-        // assert(msg.sender == entryPoint)
+        if (msg.sender != entryPoint) revert InvalidEntryPoint();
         console.log("postOp");
     }
 }
