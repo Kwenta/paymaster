@@ -23,6 +23,8 @@ contract BaseParameters {
     address public constant USD_PROXY_ANDROMEDA =
         0x09d51516F38980035153a554c26Df3C6f51a23C3;
 
+    address public constant SMART_MARGIN_V3 = 0xe331a7eeC851Ba702aA8BF43070a178451d6D28E;
+
     // https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
     address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 

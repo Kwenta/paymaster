@@ -46,7 +46,18 @@ contract Bootstrap is Test {
 
     function initializeBase() internal {
         BootstrapBase bootstrap = new BootstrapBase();
-        marginPaymasterAddress = bootstrap.init();
+        (
+            address _marginPaymasterAddress,
+            address _perpsMarketProxyAddress,
+            address _spotMarketProxyAddress,
+            address _sUSDAddress,
+            address _pDAOAddress,
+            address _smartMarginV3Address,
+            address _usdc,
+            uint128 _sUSDCId
+        ) = bootstrap.init();
+
+        marginPaymasterAddress = _marginPaymasterAddress;
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
     }
 
@@ -78,10 +89,28 @@ contract BootstrapOptimismGoerli is Setup, OptimismGoerliParameters {
 }
 
 contract BootstrapBase is Setup, BaseParameters {
-    function init() public returns (address) {
+    function init() public returns (
+            address,
+            address,
+            address,
+            address,
+            address,
+            address,
+            address,
+            uint128
+    ) {
         address marginPaymasterAddress = Setup.deploySystem();
 
-        return marginPaymasterAddress;
+        return (
+            marginPaymasterAddress,
+            PERPS_MARKET_PROXY_ANDROMEDA,
+            SPOT_MARKET_PROXY_ANDROMEDA,
+            USD_PROXY_ANDROMEDA,
+            PDAO,
+            SMART_MARGIN_V3,
+            USDC,
+            SUSDC_SPOT_MARKET_ID
+        );
     }
 }
 
