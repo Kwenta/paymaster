@@ -65,7 +65,7 @@ contract MarginPaymaster is IPaymaster, Zap {
         perpsMarketSNXV3.modifyCollateral(accountId, sUSDId, take);
         uint256 takeAbs = uint256(take * -1);
         uint256 usdcAmount = _zapOut(takeAbs);
-        console.log("actualGasCost", actualGasCost); // 216906600000000 = 0.0002169 ETH
+        console.log("actualGasCost", actualGasCost); // 43381320000000 = 0.00004338132 ETH = 0.13 USD
 
         IV3SwapRouter.ExactOutputSingleParams memory params = IV3SwapRouter
             .ExactOutputSingleParams({

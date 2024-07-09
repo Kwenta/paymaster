@@ -63,8 +63,8 @@ contract MarginPaymasterTest is Bootstrap {
             callGasLimit: 2_000_000,
             verificationGasLimit: 2_000_000,
             preVerificationGas: 200_000,
-            maxFeePerGas: 0.1 gwei,
-            maxPriorityFeePerGas: 0.1 gwei,
+            maxFeePerGas: 0.02 gwei,
+            maxPriorityFeePerGas: 0.02 gwei,
             paymasterAndData: abi.encodePacked(address(marginPaymaster)),
             signature: signature
         });
