@@ -27,8 +27,14 @@ contract BaseParameters {
 
     address public constant CANONICAL_ENTRY_POINT = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
 
+    // https://github.com/Uniswap/swap-router-contracts/blob/main/contracts/SwapRouter02.sol
+    address public constant UNISWAP_ROUTER_02 = 0x2626664c2603336E57B271c5C0b26F421741e481;
+
     // https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
     address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+
+    // https://basescan.org/token/0x4200000000000000000000000000000000000006
+    address public constant WETH = 0x4200000000000000000000000000000000000006;
 
     // https://usecannon.com/packages/synthetix-spot-market/3.3.5/84531-andromeda
     uint128 public constant SUSDC_SPOT_MARKET_ID = 1;
