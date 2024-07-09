@@ -68,6 +68,7 @@ contract Bootstrap is Test {
         pDAOAddress = _pDAOAddress;
         smartMarginV3Address = _smartMarginV3Address;
         canonicalEntryPointAddress = payable(_canonicalEntryPointAddress);
+        entryPoint = EntryPoint(canonicalEntryPointAddress);
         usdc = _usdc;
         sUSDCId = _sUSDCId;
 
