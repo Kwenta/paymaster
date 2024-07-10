@@ -80,6 +80,9 @@ contract MarginPaymaster is IPaymaster, Zap {
                                VALIDATION
     //////////////////////////////////////////////////////////////*/
 
+    // potential edgcases:
+    // userop is to transferFrom USDC to the sender account
+    // then there may be funds available that don't show up
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32,
@@ -89,7 +92,18 @@ contract MarginPaymaster is IPaymaster, Zap {
         onlyEntryPoint
         returns (bytes memory context, uint256 validationData)
     {
-        context = abi.encode(userOp.sender); // passed to the postOp method
+        address sender = userOp.sender;
+        uint256 balanceOfSender = _USDC.balanceOf(sender);
+        uint256 allowanceFromSender = IERC20(address(_USDC)).allowance(
+            userOp.sender,
+            address(this)
+        );
+        uint256 accountBalance = snxV3AccountsModule.balanceOf(sender);
+        if (accountBalance > 0) {
+            uint128 accountId = getWalletAccountId(sender);
+            // uint256 marginOfSender =
+        }
+        context = abi.encode(sender); // passed to the postOp method
         validationData = 0; // 0 means accept sponsorship, 1 means reject
     }
 
@@ -104,12 +118,7 @@ contract MarginPaymaster is IPaymaster, Zap {
     ) external onlyEntryPoint {
         (, int24 tick, , , , , ) = pool.slot0();
 
-        uint256 costOfGasInUSDC = (OracleLibrary.getQuoteAtTick(
-            tick,
-            uint128(actualGasCostInWei), // TODO: account for gas costs of postOp func
-            address(weth),
-            address(_USDC)
-        ) * 110) / 100; // allow for 10% slippage
+        uint256 costOfGasInUSDC = getCostOfGasInUSDC(actualGasCostInWei); // TODO: account for gas costs of postOp func
         uint256 USDCToSwapForWETH = costOfGasInUSDC;
         address sender = abi.decode(context, (address));
         uint256 availableUSDCInWallet = getUSDCAvailableInWallet(sender);
@@ -130,6 +139,7 @@ contract MarginPaymaster is IPaymaster, Zap {
 
             uint256 sUSDToWithdrawFromMargin = (costOfGasInUSDC -
                 availableUSDCInWallet) * 1e12;
+            // TODO: handle users who don't have an snx account or margin or enough margin
             withdrawFromMargin(sender, sUSDToWithdrawFromMargin);
             // zap sUSD into USDC
             USDCToSwapForWETH =
@@ -151,18 +161,34 @@ contract MarginPaymaster is IPaymaster, Zap {
                                 HELPERS
     //////////////////////////////////////////////////////////////*/
 
+    function getCostOfGasInUSDC(
+        uint256 gasCostInWei
+    ) internal view returns (uint256) {
+        (, int24 tick, , , , , ) = pool.slot0();
+        return
+            (OracleLibrary.getQuoteAtTick(
+                tick,
+                uint128(gasCostInWei),
+                address(weth),
+                address(_USDC)
+            ) * 110) / 100; // allow for 10% slippage TODO: think more carefully about this
+    }
+
+    function getWalletAccountId(
+        address wallet
+    ) internal view returns (uint128) {
+        /// @dev: note, this impl assumes the user has only one account
+        /// @dev: further development efforts would be required to support multiple accounts
+        return uint128(snxV3AccountsModule.tokenOfOwnerByIndex(wallet, 0));
+    }
+
     function withdrawFromMargin(
         address sender,
         uint256 sUSDToWithdrawFromMargin
     ) internal {
-        /// @dev: note, this impl assumes the user has only one account
-        /// @dev: further development efforts would be required to support multiple accounts
-        uint128 accountId = uint128(
-            snxV3AccountsModule.tokenOfOwnerByIndex(sender, 0)
-        );
         // pull sUSD from margin
         perpsMarketSNXV3.modifyCollateral(
-            accountId,
+            getWalletAccountId(sender),
             sUSDId,
             -int256(sUSDToWithdrawFromMargin)
         );
