@@ -83,13 +83,10 @@ contract MarginPaymaster is IPaymaster, Zap {
 
         address sender = abi.decode(context, (address));
 
-        uint256 walletBalance = _USDC.balanceOf(sender);
-        uint256 allowance = IERC20(address(_USDC)).allowance(
-            sender,
-            address(this)
-        );
+        uint256 availableUSDCInWallet = getUSDCAvailableInWallet(sender);
 
-        if (walletBalance >= costOfGasInUSDC && allowance >= costOfGasInUSDC) {
+        // TODO: support partial payment from wallet ???
+        if (availableUSDCInWallet >= costOfGasInUSDC) {
             // pull funds from wallet
             _USDC.transferFrom(sender, address(this), costOfGasInUSDC);
         } else {
@@ -119,6 +116,17 @@ contract MarginPaymaster is IPaymaster, Zap {
             });
         uint256 amountOut = uniV3Router.exactInputSingle(params);
         weth.withdraw(amountOut);
+    }
+
+    function getUSDCAvailableInWallet(
+        address wallet
+    ) internal view returns (uint256) {
+        uint256 balance = _USDC.balanceOf(wallet);
+        uint256 allowance = IERC20(address(_USDC)).allowance(
+            wallet,
+            address(this)
+        );
+        return allowance < balance ? allowance : balance;
     }
 
     receive() external payable {}
