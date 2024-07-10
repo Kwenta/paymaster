@@ -12,6 +12,7 @@ import {OracleLibrary} from "src/libraries/OracleLibrary.sol";
 import {IUniswapV3Pool} from "src/interfaces/external/IUniswapV3Pool.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {INftModule} from "src/interfaces/external/INftModule.sol";
+import {MockAccount} from "src/MockAccount.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -99,22 +100,15 @@ contract MarginPaymaster is IPaymaster, Zap {
     {
         address sender = userOp.sender;
         context = abi.encode(sender); // passed to the postOp method
-
         uint256 maxCostInUSDC = getCostOfGasInUSDC(maxCostInWei);
-        console.log("maxCostInUSDC :", maxCostInUSDC);
         (uint256 available, uint256 balance, ) = getUSDCAvailableInWallet(
             sender
         );
-        console.log("available :", available);
-        console.log("balance :", balance);
 
         if (available >= maxCostInUSDC) {
-            console.log("in here yo");
             return (context, 0); // 0 means accept sponsorship, 1 means reject
         }
 
-        console.log("balance >= maxCostInUSDC", balance >= maxCostInUSDC);
-        console.log("available < maxCostInUSDC", available < maxCostInUSDC);
         if (balance >= maxCostInUSDC && available < maxCostInUSDC) {
             // as the users balance is sufficient, but they have not yet approved the paymaster
             // if the function call is to approve the paymaster, then we can accept the sponsorship
@@ -124,25 +118,29 @@ contract MarginPaymaster is IPaymaster, Zap {
                 type(uint256).max
             );
             // slice the correct section of the user op calldata out to compare
+            // TODO: actually calculate approval amount rather than only allowing type(uint256).max
             bytes memory userOpCallData = userOp.callData[132:200];
             if (keccak256(userOpCallData) == keccak256(approvalCalldata)) {
                 return (context, 0); // 0 means accept sponsorship, 1 means reject
             }
         }
 
-        // TODO: remove this cheat
-        // 0x8ba9b206 = setupAccount
-        // bytes memory setupAccountCalldata = MockAccount.s
-        // if (bytes4(userOp.callData) == bytes4(0x8ba9b206)) {
-        //     return (context, 0); // 0 means accept sponsorship, 1 means reject
-        // }
-
+        // TODO: handle when account has sufficient margin to cover
         uint256 accountBalance = snxV3AccountsModule.balanceOf(sender);
         if (accountBalance > 0) {
             uint128 accountId = getWalletAccountId(sender);
             // uint256 marginOfSender =
         }
-        validationData = 0; // 0 means accept sponsorship, 1 means reject
+
+        // TODO: remove this mock account dependency
+        bytes memory setupAccountSelector = abi.encodePacked(
+            MockAccount.setupAccount.selector
+        );
+        if (keccak256(setupAccountSelector) == keccak256(userOp.callData)) {
+            return (context, 0); // 0 means accept sponsorship, 1 means reject
+        }
+
+        validationData = 1; // 0 means accept sponsorship, 1 means reject
     }
 
     /*//////////////////////////////////////////////////////////////
