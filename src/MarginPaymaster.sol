@@ -10,6 +10,7 @@ import {Account} from "src/Account.sol";
 import {Zap} from "lib/zap/src/Zap.sol";
 import {OracleLibrary} from "src/libraries/OracleLibrary.sol";
 import {IUniswapV3Pool} from "src/interfaces/external/IUniswapV3Pool.sol";
+import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -75,21 +76,35 @@ contract MarginPaymaster is IPaymaster, Zap {
 
         uint256 costOfGasInUSDC = (OracleLibrary.getQuoteAtTick(
             tick,
-            uint128(actualGasCostInWei),
+            uint128(actualGasCostInWei), // TODO: account for gas costs of postOp func
             address(weth),
             address(_USDC)
-        ) * 110) / 100; // TODO: account for gas costs of postOp func
-        uint256 costOfGasInsUSD = costOfGasInUSDC * 1e12;
+        ) * 110) / 100; // 10% slippage
 
         address sender = abi.decode(context, (address));
-        uint128 accountId = Account(sender).accountId();
-        // TODO: also support pulling USDC from the wallet directly
-        perpsMarketSNXV3.modifyCollateral(
-            accountId,
-            sUSDId,
-            -int256(costOfGasInsUSD)
+
+        uint256 walletBalance = _USDC.balanceOf(sender);
+        uint256 allowance = IERC20(address(_USDC)).allowance(
+            sender,
+            address(this)
         );
-        uint256 usdcWithdrawn = _zapOut(costOfGasInsUSD);
+
+        if (walletBalance >= costOfGasInUSDC && allowance >= costOfGasInUSDC) {
+            // pull funds from wallet
+            _USDC.transferFrom(sender, address(this), costOfGasInUSDC);
+        } else {
+            // pull funds from margin
+            uint256 costOfGasInsUSD = costOfGasInUSDC * 1e12;
+            uint128 accountId = Account(sender).accountId();
+            // TODO: also support pulling USDC from the wallet directly
+            perpsMarketSNXV3.modifyCollateral(
+                accountId,
+                sUSDId,
+                -int256(costOfGasInsUSD)
+            );
+            costOfGasInUSDC = _zapOut(costOfGasInsUSD);
+        }
+
         console.log("actualGasCostInWei", actualGasCostInWei); // 43350920000000 = 0.00004335092 ETH = 0.13 USD
 
         IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter
@@ -98,7 +113,7 @@ contract MarginPaymaster is IPaymaster, Zap {
                 tokenOut: address(weth),
                 fee: 500, // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
                 recipient: address(this),
-                amountIn: usdcWithdrawn,
+                amountIn: costOfGasInUSDC,
                 amountOutMinimum: actualGasCostInWei, // TODO: should this be required? -> could cause failures
                 sqrtPriceLimitX96: 0
             });

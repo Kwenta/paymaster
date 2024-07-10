@@ -35,6 +35,34 @@ contract Account is IAccount, IERC721Receiver {
         usdc = IERC20(_usdc);
     }
 
+    function execute(
+        address dest,
+        uint256 value,
+        bytes calldata func
+    ) external {
+        _call(dest, value, func);
+    }
+
+    function _call(address target, uint256 value, bytes memory data) internal {
+        assembly ("memory-safe") {
+            let succ := call(
+                gas(),
+                target,
+                value,
+                add(data, 0x20),
+                mload(data),
+                0x00,
+                0
+            )
+
+            if iszero(succ) {
+                let fmp := mload(0x40)
+                returndatacopy(fmp, 0x00, returndatasize())
+                revert(fmp, returndatasize())
+            }
+        }
+    }
+
     function setupAccount() external {
         accountId = perpsMarketSNXV3.createAccount();
         perpsMarketSNXV3.grantPermission({

@@ -123,6 +123,31 @@ contract MarginPaymasterTest is Bootstrap {
         assertLt(colAmount, 5 ether);
     }
 
+    function testTransferToWalletAndApprove() public {
+        bytes memory approvalCalldata = abi.encodeWithSelector(
+            usdc.approve.selector,
+            marginPaymasterAddress,
+            type(uint256).max
+        );
+        userOp.callData = abi.encodeWithSelector(
+            Account.execute.selector,
+            address(usdc),
+            0,
+            approvalCalldata
+        );
+        ops.push(userOp);
+
+        mintUSDC(sender, 1000 * 1e6);
+
+        vm.prank(bundler);
+        entryPoint.handleOps(ops, bundler);
+
+        assertGt(usdc.allowance(sender, marginPaymasterAddress), 0);
+        uint256 usdcLeftInWallet = usdc.balanceOf(sender);
+        assertLt(usdcLeftInWallet, 1000 * 1e6);
+        assertGt(usdcLeftInWallet, 0);
+    }
+
     function testOnlyEntryPointCanCallValidatePaymasterUserOp() public {
         // Create a dummy UserOperation
         UserOperation memory op = getDummyUserOp();
