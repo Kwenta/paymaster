@@ -69,8 +69,8 @@ contract MarginPaymaster is IPaymaster, Zap {
         uint256 costOfGasInUSDC = OracleLibrary.getQuoteAtTick(
             tick, // int24 tick
             uint128(actualGasCostInWei), // uint128 baseAmount TODO: account for gas costs of postOp func
-            0x4200000000000000000000000000000000000006, // address baseToken
-            0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 // address quoteToken
+            address(weth), // address baseToken
+            address(_USDC) // address quoteToken
         );
         uint256 costOfGasInsUSD = costOfGasInUSDC * 1e12;
 
