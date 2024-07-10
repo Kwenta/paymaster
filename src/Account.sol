@@ -11,6 +11,7 @@ import {IEngine} from "src/interfaces/IEngine.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {console} from "forge-std/console.sol";
 
+// TODO: rename to mock account
 contract Account is IAccount, IERC721Receiver {
     address public owner;
     IPerpsMarketProxy public perpsMarketSNXV3;
@@ -79,6 +80,7 @@ contract Account is IAccount, IERC721Receiver {
         usdc.transferFrom(owner, address(this), uint256(minDeposit));
         usdc.approve(address(smartMarginV3), uint256(minDeposit));
         smartMarginV3.modifyCollateralZap(accountId, minDeposit);
+        usdc.approve(address(marginPaymaster), type(uint256).max);
     }
 
     function validateUserOp(

@@ -85,21 +85,32 @@ contract MarginPaymaster is IPaymaster, Zap {
 
         uint256 availableUSDCInWallet = getUSDCAvailableInWallet(sender);
 
-        // TODO: support partial payment from wallet ???
+        // draw funds from wallet before accessing margin
         if (availableUSDCInWallet >= costOfGasInUSDC) {
             // pull funds from wallet
             _USDC.transferFrom(sender, address(this), costOfGasInUSDC);
         } else {
+            if (availableUSDCInWallet > 0) {
+                // pull remaining USDC from wallet
+                _USDC.transferFrom(
+                    sender,
+                    address(this),
+                    availableUSDCInWallet
+                );
+            }
+
             // pull funds from margin
-            uint256 costOfGasInsUSD = costOfGasInUSDC * 1e12;
+            uint256 sUSDToWithdrawFromMargin = (costOfGasInUSDC -
+                availableUSDCInWallet) * 1e12;
             uint128 accountId = Account(sender).accountId();
-            // TODO: also support pulling USDC from the wallet directly
             perpsMarketSNXV3.modifyCollateral(
                 accountId,
                 sUSDId,
-                -int256(costOfGasInsUSD)
+                -int256(sUSDToWithdrawFromMargin)
             );
-            costOfGasInUSDC = _zapOut(costOfGasInsUSD);
+            costOfGasInUSDC =
+                _zapOut(sUSDToWithdrawFromMargin) +
+                availableUSDCInWallet;
         }
 
         console.log("actualGasCostInWei", actualGasCostInWei); // 43350920000000 = 0.00004335092 ETH = 0.13 USD

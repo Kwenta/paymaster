@@ -8,12 +8,20 @@ import {MarginPaymaster, IPaymaster} from "src/MarginPaymaster.sol";
 import {console} from "forge-std/console.sol";
 
 contract MarginPaymasterTest is Bootstrap {
+    /*//////////////////////////////////////////////////////////////
+                                 STATE
+    //////////////////////////////////////////////////////////////*/
+
     uint256 constant BASE_BLOCK_NUMBER = 16915026;
     UserOperation internal userOp;
     bytes32 internal constant ADMIN_PERMISSION = "ADMIN";
     address constant USDC_MASTER_MINTER =
         0x2230393EDAD0299b7E7B59F20AA856cD1bEd52e1;
     uint128 constant sUSDId = 0;
+
+    /*//////////////////////////////////////////////////////////////
+                                 SETUP
+    //////////////////////////////////////////////////////////////*/
 
     function setUp() public {
         /// @dev uncomment the following line to test in a forked environment
@@ -70,6 +78,10 @@ contract MarginPaymasterTest is Bootstrap {
         });
     }
 
+    /*//////////////////////////////////////////////////////////////
+                                 TESTS
+    //////////////////////////////////////////////////////////////*/
+
     function testAccountDeployed() public {
         ops.push(userOp);
 
@@ -113,7 +125,6 @@ contract MarginPaymasterTest is Bootstrap {
         );
         assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
         assertEq(usdc.balanceOf(sender), 0);
-        assertLt(usdc.balanceOf(marginPaymasterAddress), 1e6);
         assertEq(usdc.balanceOf(marginPaymasterAddress), 0);
         uint256 colAmount = perpsMarketProxy.getCollateralAmount(
             accountId,
@@ -121,6 +132,27 @@ contract MarginPaymasterTest is Bootstrap {
         );
         assertGt(colAmount, 4 ether);
         assertLt(colAmount, 5 ether);
+    }
+
+    function testPayFromWalletAndMargin() public {
+        ops.push(userOp);
+
+        mintUSDC(address(sender), 1 * 1e4); // send 0.01 USD to wallet
+        mintUSDC(address(this), 1000 * 1e6);
+        usdc.approve(sender, type(uint256).max);
+
+        vm.prank(bundler);
+        entryPoint.handleOps(ops, bundler);
+
+        assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
+        assertEq(usdc.balanceOf(sender), 0);
+        assertEq(usdc.balanceOf(marginPaymasterAddress), 0);
+        // uint256 colAmount = perpsMarketProxy.getCollateralAmount(
+        //     account.accountId(),
+        //     sUSDId
+        // );
+        // assertGt(colAmount, 4 ether);
+        // assertLt(colAmount, 5 ether);
     }
 
     function testTransferToWalletAndApprove() public {
@@ -148,6 +180,10 @@ contract MarginPaymasterTest is Bootstrap {
         assertGt(usdcLeftInWallet, 0);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                             ACCESS CONTROL
+    //////////////////////////////////////////////////////////////*/
+
     function testOnlyEntryPointCanCallValidatePaymasterUserOp() public {
         // Create a dummy UserOperation
         UserOperation memory op = getDummyUserOp();
@@ -168,6 +204,10 @@ contract MarginPaymasterTest is Bootstrap {
         vm.expectRevert(MarginPaymaster.InvalidEntryPoint.selector);
         marginPaymaster.postOp(mode, context, 0);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                              TEST HELPERS
+    //////////////////////////////////////////////////////////////*/
 
     function bytesToAddress(
         bytes memory bys
