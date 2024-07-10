@@ -8,7 +8,7 @@ import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, BaseParam
 import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 import {IV3SwapRouter} from "src/interfaces/external/IV3SwapRouter.sol";
 import {IWETH9} from "src/interfaces/external/IWETH9.sol";
-import {AccountFactory, Account} from "src/Account.sol";
+import {AccountFactory, MockAccount} from "src/MockAccount.sol";
 import {IUSDC} from "test/utils/interfaces/IUSDC.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
 import {console} from "lib/forge-std/src/console.sol";
@@ -20,7 +20,7 @@ contract Bootstrap is Test {
     address payable internal marginPaymasterAddress;
     EntryPoint internal entryPoint;
     AccountFactory internal accountFactory;
-    Account internal account;
+    MockAccount internal account;
     uint256 userPk = 0x1234;
     uint256 bundlerPk = 0x12345;
     address payable user = payable(vm.addr(0x1234));

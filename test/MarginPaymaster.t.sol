@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import {Bootstrap} from "test/utils/Bootstrap.sol";
 import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
-import {AccountFactory, Account} from "src/Account.sol";
+import {AccountFactory, MockAccount} from "src/MockAccount.sol";
 import {MarginPaymaster, IPaymaster} from "src/MarginPaymaster.sol";
 import {console} from "forge-std/console.sol";
 
@@ -59,7 +59,7 @@ contract MarginPaymasterTest is Bootstrap {
             }
             sender = bytesToAddress(result);
         }
-        account = Account(sender);
+        account = MockAccount(sender);
 
         uint256 nonce = entryPoint.getNonce(sender, 0);
         bytes memory signature;
@@ -67,7 +67,7 @@ contract MarginPaymasterTest is Bootstrap {
             sender: sender,
             nonce: nonce,
             initCode: initCode,
-            callData: abi.encodeWithSelector(Account.setupAccount.selector),
+            callData: abi.encodeWithSelector(MockAccount.setupAccount.selector),
             callGasLimit: 2_000_000,
             verificationGasLimit: 2_000_000,
             preVerificationGas: 200_000,
@@ -162,7 +162,7 @@ contract MarginPaymasterTest is Bootstrap {
             type(uint256).max
         );
         userOp.callData = abi.encodeWithSelector(
-            Account.execute.selector,
+            MockAccount.execute.selector,
             address(usdc),
             0,
             approvalCalldata

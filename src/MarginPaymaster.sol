@@ -6,7 +6,7 @@ import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 import {IV3SwapRouter} from "src/interfaces/external/IV3SwapRouter.sol";
 import {IWETH9} from "src/interfaces/external/IWETH9.sol";
 import {IEngine} from "src/interfaces/IEngine.sol";
-import {Account} from "src/Account.sol";
+import {MockAccount} from "src/MockAccount.sol";
 import {Zap} from "lib/zap/src/Zap.sol";
 import {OracleLibrary} from "src/libraries/OracleLibrary.sol";
 import {IUniswapV3Pool} from "src/interfaces/external/IUniswapV3Pool.sol";
@@ -101,7 +101,9 @@ contract MarginPaymaster is IPaymaster, Zap {
             // pull funds from margin
             uint256 sUSDToWithdrawFromMargin = (costOfGasInUSDC -
                 availableUSDCInWallet) * 1e12;
-            uint128 accountId = Account(sender).accountId();
+            // TODO: think, can this be pulled elsehow
+            // this current impl would require a custom account module
+            uint128 accountId = MockAccount(sender).accountId();
             perpsMarketSNXV3.modifyCollateral(
                 accountId,
                 sUSDId,

@@ -11,8 +11,7 @@ import {IEngine} from "src/interfaces/IEngine.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {console} from "forge-std/console.sol";
 
-// TODO: rename to mock account
-contract Account is IAccount, IERC721Receiver {
+contract MockAccount is IAccount, IERC721Receiver {
     address public owner;
     IPerpsMarketProxy public perpsMarketSNXV3;
     address public marginPaymaster;
@@ -132,7 +131,7 @@ contract AccountFactory {
         // amount, salt, bytecode
         bytes32 salt = bytes32(uint256(uint160(owner)));
         bytes memory bytecode = abi.encodePacked(
-            type(Account).creationCode,
+            type(MockAccount).creationCode,
             abi.encode(
                 owner,
                 perpsMarketSNXV3,
