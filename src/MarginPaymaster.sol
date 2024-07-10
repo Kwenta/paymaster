@@ -81,29 +81,67 @@ contract MarginPaymaster is IPaymaster, Zap {
     //////////////////////////////////////////////////////////////*/
 
     // potential edgcases:
-    // userop is to transferFrom USDC to the sender account
+    // 1. userop is to transferFrom USDC to the sender account
     // then there may be funds available that don't show up
+    // 2. userOp is transfer of USDC
+    // then there may be funds that dissapear after execution stage
+    // 3. userop is approve of USDC
+    // that could change the amount of USDC available to pull
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32,
-        uint256
+        uint256 maxCostInWei
     )
         external
+        view
         onlyEntryPoint
         returns (bytes memory context, uint256 validationData)
     {
         address sender = userOp.sender;
-        uint256 balanceOfSender = _USDC.balanceOf(sender);
-        uint256 allowanceFromSender = IERC20(address(_USDC)).allowance(
-            userOp.sender,
-            address(this)
+        context = abi.encode(sender); // passed to the postOp method
+
+        uint256 maxCostInUSDC = getCostOfGasInUSDC(maxCostInWei);
+        console.log("maxCostInUSDC :", maxCostInUSDC);
+        (uint256 available, uint256 balance, ) = getUSDCAvailableInWallet(
+            sender
         );
+        console.log("available :", available);
+        console.log("balance :", balance);
+
+        if (available >= maxCostInUSDC) {
+            console.log("in here yo");
+            return (context, 0); // 0 means accept sponsorship, 1 means reject
+        }
+
+        console.log("balance >= maxCostInUSDC", balance >= maxCostInUSDC);
+        console.log("available < maxCostInUSDC", available < maxCostInUSDC);
+        if (balance >= maxCostInUSDC && available < maxCostInUSDC) {
+            // as the users balance is sufficient, but they have not yet approved the paymaster
+            // if the function call is to approve the paymaster, then we can accept the sponsorship
+            bytes memory approvalCalldata = abi.encodeWithSelector(
+                _USDC.approve.selector,
+                address(this),
+                type(uint256).max
+            );
+            // slice the correct section of the user op calldata out to compare
+            bytes memory userOpCallData = userOp.callData[132:200];
+            if (keccak256(userOpCallData) == keccak256(approvalCalldata)) {
+                return (context, 0); // 0 means accept sponsorship, 1 means reject
+            }
+        }
+
+        // TODO: remove this cheat
+        // 0x8ba9b206 = setupAccount
+        // bytes memory setupAccountCalldata = MockAccount.s
+        // if (bytes4(userOp.callData) == bytes4(0x8ba9b206)) {
+        //     return (context, 0); // 0 means accept sponsorship, 1 means reject
+        // }
+
         uint256 accountBalance = snxV3AccountsModule.balanceOf(sender);
         if (accountBalance > 0) {
             uint128 accountId = getWalletAccountId(sender);
             // uint256 marginOfSender =
         }
-        context = abi.encode(sender); // passed to the postOp method
         validationData = 0; // 0 means accept sponsorship, 1 means reject
     }
 
@@ -116,12 +154,10 @@ contract MarginPaymaster is IPaymaster, Zap {
         bytes calldata context,
         uint256 actualGasCostInWei
     ) external onlyEntryPoint {
-        (, int24 tick, , , , , ) = pool.slot0();
-
         uint256 costOfGasInUSDC = getCostOfGasInUSDC(actualGasCostInWei); // TODO: account for gas costs of postOp func
         uint256 USDCToSwapForWETH = costOfGasInUSDC;
         address sender = abi.decode(context, (address));
-        uint256 availableUSDCInWallet = getUSDCAvailableInWallet(sender);
+        (uint256 availableUSDCInWallet, , ) = getUSDCAvailableInWallet(sender);
 
         // draw funds from wallet before accessing margin
         if (availableUSDCInWallet >= costOfGasInUSDC) {
@@ -210,13 +246,14 @@ contract MarginPaymaster is IPaymaster, Zap {
 
     function getUSDCAvailableInWallet(
         address wallet
-    ) internal view returns (uint256) {
-        uint256 balance = _USDC.balanceOf(wallet);
-        uint256 allowance = IERC20(address(_USDC)).allowance(
-            wallet,
-            address(this)
-        );
-        return allowance < balance ? allowance : balance;
+    )
+        internal
+        view
+        returns (uint256 availableUSDC, uint256 balance, uint256 allowance)
+    {
+        balance = _USDC.balanceOf(wallet);
+        allowance = IERC20(address(_USDC)).allowance(wallet, address(this));
+        availableUSDC = allowance < balance ? allowance : balance;
     }
 
     receive() external payable {}
