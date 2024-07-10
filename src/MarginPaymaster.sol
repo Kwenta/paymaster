@@ -76,6 +76,7 @@ contract MarginPaymaster is IPaymaster, Zap {
 
         address sender = abi.decode(context, (address));
         uint128 accountId = Account(sender).accountId();
+        // TODO: also support pulling USDC from the wallet directly
         perpsMarketSNXV3.modifyCollateral(
             accountId,
             sUSDId,
