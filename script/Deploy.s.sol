@@ -21,7 +21,8 @@ contract Setup is Script {
         address spotMarketProxy,
         uint128 sUSDCId,
         address uniV3Router,
-        address weth
+        address weth,
+        address pool
     ) public returns (address payable) {
         MarginPaymaster marginPaymaster = new MarginPaymaster(
             entryPoint,
@@ -32,7 +33,8 @@ contract Setup is Script {
             spotMarketProxy,
             sUSDCId,
             uniV3Router,
-            weth
+            weth,
+            pool
         );
         return payable(address(marginPaymaster));
     }
@@ -55,7 +57,8 @@ contract DeployBase is Setup, BaseParameters {
             SPOT_MARKET_PROXY_ANDROMEDA,
             SUSDC_SPOT_MARKET_ID,
             UNISWAP_ROUTER_02,
-            WETH
+            WETH,
+            UNI_WETH_USDC_POOL
         );
 
         vm.stopBroadcast();

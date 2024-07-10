@@ -27,6 +27,7 @@ contract Bootstrap is Test {
     address payable bundler = payable(vm.addr(0x12345));
     uint256 internal initialPaymasterBalance = 10 ether;
     address internal sender;
+    address internal pool;
 
     UserOperation[] ops;
 
@@ -59,6 +60,7 @@ contract Bootstrap is Test {
             address(0),
             0,
             address(0),
+            address(0),
             address(0)
         );
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
@@ -77,7 +79,8 @@ contract Bootstrap is Test {
             address _usdc,
             uint128 _sUSDCId,
             address _uniswapRouter,
-            address _weth
+            address _weth,
+            address _pool
         ) = bootstrap.init();
         perpsMarketProxyAddress = _perpsMarketProxyAddress;
         perpsMarketProxy = IPerpsMarketProxy(perpsMarketProxyAddress);
@@ -92,6 +95,7 @@ contract Bootstrap is Test {
         sUSDCId = _sUSDCId;
         uniV3Router = IV3SwapRouter(_uniswapRouter);
         weth = IWETH9(_weth);
+        pool = _pool;
 
         marginPaymasterAddress = _marginPaymasterAddress;
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
@@ -120,7 +124,8 @@ contract BootstrapLocal is Setup {
         address spotMarketProxy,
         uint128 sUSDCId,
         address uniswapRouter,
-        address weth
+        address weth,
+        address pool
     ) public returns (address payable) {
         address payable marginPaymasterAddress = Setup.deploySystem(
             entryPoint,
@@ -131,7 +136,8 @@ contract BootstrapLocal is Setup {
             spotMarketProxy,
             sUSDCId,
             uniswapRouter,
-            weth
+            weth,
+            pool
         );
 
         return marginPaymasterAddress;
@@ -152,6 +158,7 @@ contract BootstrapBase is Setup, BaseParameters {
             address,
             uint128,
             address,
+            address,
             address
         )
     {
@@ -164,7 +171,8 @@ contract BootstrapBase is Setup, BaseParameters {
             SPOT_MARKET_PROXY_ANDROMEDA,
             SUSDC_SPOT_MARKET_ID,
             UNISWAP_ROUTER_02,
-            WETH
+            WETH,
+            UNI_WETH_USDC_POOL
         );
 
         return (
@@ -178,7 +186,8 @@ contract BootstrapBase is Setup, BaseParameters {
             USDC,
             SUSDC_SPOT_MARKET_ID,
             UNISWAP_ROUTER_02,
-            WETH
+            WETH,
+            UNI_WETH_USDC_POOL
         );
     }
 }
