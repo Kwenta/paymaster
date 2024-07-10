@@ -19,6 +19,10 @@ import {console} from "forge-std/console.sol";
 /// @notice Responsible for paying tx gas fees using trader margin
 /// @author tommyrharper (zeroknowledgeltd@gmail.com)
 contract MarginPaymaster is IPaymaster, Zap {
+    /*//////////////////////////////////////////////////////////////
+                               IMMUTABLES
+    //////////////////////////////////////////////////////////////*/
+
     address public immutable entryPoint;
     IEngine public immutable smartMarginV3;
     IPerpsMarketProxy public immutable perpsMarketSNXV3;
@@ -28,7 +32,15 @@ contract MarginPaymaster is IPaymaster, Zap {
     uint128 public constant sUSDId = 0;
     INftModule public immutable snxV3AccountsModule;
 
+    /*//////////////////////////////////////////////////////////////
+                                 ERRORS
+    //////////////////////////////////////////////////////////////*/
+
     error InvalidEntryPoint();
+
+    /*//////////////////////////////////////////////////////////////
+                              CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
 
     constructor(
         address _entryPoint,
@@ -54,10 +66,18 @@ contract MarginPaymaster is IPaymaster, Zap {
         );
     }
 
+    /*//////////////////////////////////////////////////////////////
+                               MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
     modifier onlyEntryPoint() {
         if (msg.sender != entryPoint) revert InvalidEntryPoint();
         _;
     }
+
+    /*//////////////////////////////////////////////////////////////
+                               VALIDATION
+    //////////////////////////////////////////////////////////////*/
 
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
@@ -71,6 +91,10 @@ contract MarginPaymaster is IPaymaster, Zap {
         context = abi.encode(userOp.sender); // passed to the postOp method
         validationData = 0; // 0 means accept sponsorship, 1 means reject
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                POST OP
+    //////////////////////////////////////////////////////////////*/
 
     function postOp(
         PostOpMode,
@@ -138,7 +162,13 @@ contract MarginPaymaster is IPaymaster, Zap {
         uint256 amountOut = uniV3Router.exactInputSingle(params);
         // SWAP WETH for ETH
         weth.withdraw(amountOut);
+
+        // TODO: add renew deposit logic if it is running low
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                HELPERS
+    //////////////////////////////////////////////////////////////*/
 
     function getUSDCAvailableInWallet(
         address wallet
