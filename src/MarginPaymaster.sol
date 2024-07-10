@@ -31,6 +31,7 @@ contract MarginPaymaster is IPaymaster, Zap {
     IUniswapV3Pool public immutable pool;
     uint128 public constant sUSDId = 0;
     INftModule public immutable snxV3AccountsModule;
+    uint24 constant POOL_FEE = 500; // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -149,18 +150,8 @@ contract MarginPaymaster is IPaymaster, Zap {
         console.log("actualGasCostInWei", actualGasCostInWei); // 43350920000000 = 0.00004335092 ETH = 0.13 USD
 
         // swap USDC for WETH
-        IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter
-            .ExactInputSingleParams({
-                tokenIn: address(_USDC),
-                tokenOut: address(weth),
-                fee: 500, // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
-                recipient: address(this),
-                amountIn: USDCToSwapForWETH,
-                amountOutMinimum: actualGasCostInWei, // TODO: should this be required? -> could cause failures
-                sqrtPriceLimitX96: 0
-            });
-        uint256 amountOut = uniV3Router.exactInputSingle(params);
-        // SWAP WETH for ETH
+        uint256 amountOut = swapUSDCForWETH(USDCToSwapForWETH);
+        // unwrap WETH to ETH
         weth.withdraw(amountOut);
 
         // TODO: add renew deposit logic if it is running low
@@ -169,6 +160,20 @@ contract MarginPaymaster is IPaymaster, Zap {
     /*//////////////////////////////////////////////////////////////
                                 HELPERS
     //////////////////////////////////////////////////////////////*/
+
+    function swapUSDCForWETH(uint256 amountIn) internal returns (uint256) {
+        IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter
+            .ExactInputSingleParams({
+                tokenIn: address(_USDC),
+                tokenOut: address(weth),
+                fee: POOL_FEE,
+                recipient: address(this),
+                amountIn: amountIn,
+                amountOutMinimum: 0, // TODO: think, should this be actualGasCostInWei???
+                sqrtPriceLimitX96: 0
+            });
+        return uniV3Router.exactInputSingle(params);
+    }
 
     function getUSDCAvailableInWallet(
         address wallet
