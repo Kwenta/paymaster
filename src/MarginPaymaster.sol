@@ -58,58 +58,63 @@ contract MarginPaymaster is IPaymaster, Zap {
     function postOp(
         PostOpMode,
         bytes calldata context,
-        uint256 actualGasCost
+        uint256 actualGasCostInWei
     ) external {
         if (msg.sender != entryPoint) revert InvalidEntryPoint();
+
+        (, int24 tick, , , , , ) = IUniswapV3Pool(
+            0xd0b53D9277642d899DF5C87A3966A349A798F224
+        ).slot0();
+
+        uint256 costOfGasInUSDC = OracleLibrary.getQuoteAtTick(
+            tick, // int24 tick
+            uint128(actualGasCostInWei), // uint128 baseAmount TODO: account for gas costs of postOp func
+            0x4200000000000000000000000000000000000006, // address baseToken
+            0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 // address quoteToken
+        );
+        uint256 costOfGasInsUSD = costOfGasInUSDC * 1e12;
+
         address sender = abi.decode(context, (address));
         uint128 accountId = Account(sender).accountId();
-        int256 take = -1 ether;
-        perpsMarketSNXV3.modifyCollateral(accountId, sUSDId, take);
-        uint256 takeAbs = uint256(take * -1);
-        uint256 usdcAmount = _zapOut(takeAbs);
-        console.log("actualGasCost", actualGasCost); // 43381320000000 = 0.00004338132 ETH = 0.13 USD
+        perpsMarketSNXV3.modifyCollateral(
+            accountId,
+            sUSDId,
+            -int256(costOfGasInsUSD)
+        );
+        uint256 usdcWithdrawn = _zapOut(costOfGasInsUSD);
+        console.log("actualGasCostInWei", actualGasCostInWei); // 43381320000000 = 0.00004338132 ETH = 0.13 USD
 
-        IV3SwapRouter.ExactOutputSingleParams memory params = IV3SwapRouter
-            .ExactOutputSingleParams({
+        IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter
+            .ExactInputSingleParams({
                 tokenIn: address(_USDC),
                 tokenOut: address(weth),
                 // note: aerdrome actually has higher liquidity https://www.geckoterminal.com/base/pools/0xb2cc224c1c9fee385f8ad6a55b4d94e92359dc59
                 fee: 500, // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
                 recipient: address(this),
                 // TODO: add on postOp cost
-                amountOut: actualGasCost,
-                amountInMaximum: usdcAmount,
+                amountIn: usdcWithdrawn,
+                amountOutMinimum: 0, // change to: actualGasCostInWei
                 sqrtPriceLimitX96: 0
             });
-        uniV3Router.exactOutputSingle(params);
-        weth.withdraw(10);
+        uint256 amountOut = uniV3Router.exactInputSingle(params);
+        weth.withdraw(amountOut);
 
-        (
-            uint160 sqrtPriceX96,
-            int24 tick,
-            uint16 observationIndex,
-            uint16 observationCardinality,
-            uint16 observationCardinalityNext,
-            uint8 feeProtocol,
-            bool unlocked
-        ) = IUniswapV3Pool(0xd0b53D9277642d899DF5C87A3966A349A798F224).slot0();
-
-        // uint256 thing = OracleLibrary.checkFullMathMulDiv(100, 30, 3);
-        // console.log('thing :', thing);
-        uint256 quoteAmountA = OracleLibrary.getQuoteAtTick(
-            tick, // int24 tick
-            1 ether, // uint128 baseAmount
-            0x4200000000000000000000000000000000000006, // address baseToken
-            0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 // address quoteToken
-        );
-        console.log('quoteAmountA :', quoteAmountA); // this tells me how much USDC for 1 WETH
-        uint256 quoteAmountB = OracleLibrary.getQuoteAtTick(
-            tick, // int24 tick
-            1e6, // uint128 baseAmount
-            0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, // address baseToken
-            0x4200000000000000000000000000000000000006 // address quoteToken
-        );
-        console.log('quoteAmountB :', quoteAmountB); // this tells me how much WETH for 1 USDC
+        // // uint256 thing = OracleLibrary.checkFullMathMulDiv(100, 30, 3);
+        // // console.log('thing :', thing);
+        // uint256 quoteAmountA = OracleLibrary.getQuoteAtTick(
+        //     tick, // int24 tick
+        //     1 ether, // uint128 baseAmount
+        //     0x4200000000000000000000000000000000000006, // address baseToken
+        //     0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 // address quoteToken
+        // );
+        // console.log('quoteAmountA :', quoteAmountA); // this tells me how much USDC for 1 WETH
+        // uint256 quoteAmountB = OracleLibrary.getQuoteAtTick(
+        //     tick, // int24 tick
+        //     1e6, // uint128 baseAmount
+        //     0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, // address baseToken
+        //     0x4200000000000000000000000000000000000006 // address quoteToken
+        // );
+        // console.log('quoteAmountB :', quoteAmountB); // this tells me how much WETH for 1 USDC
     }
 
     receive() external payable {}

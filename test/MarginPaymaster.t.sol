@@ -114,12 +114,13 @@ contract MarginPaymasterTest is Bootstrap {
         assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
         assertEq(usdc.balanceOf(sender), 0);
         assertLt(usdc.balanceOf(marginPaymasterAddress), 1e6);
-        assertGt(usdc.balanceOf(marginPaymasterAddress), 0);
+        assertEq(usdc.balanceOf(marginPaymasterAddress), 0);
         uint256 colAmount = perpsMarketProxy.getCollateralAmount(
             accountId,
             sUSDId
         );
-        assertEq(colAmount, 4 ether);
+        assertGt(colAmount, 4 ether);
+        assertLt(colAmount, 5 ether);
     }
 
     function testOnlyEntryPointCanCallValidatePaymasterUserOp() public {
