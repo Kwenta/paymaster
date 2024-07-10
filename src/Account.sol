@@ -64,6 +64,7 @@ contract Account is IAccount, IERC721Receiver {
         }
     }
 
+    // add argument for amount to deposit with minimum value
     function setupAccount() external {
         accountId = perpsMarketSNXV3.createAccount();
         perpsMarketSNXV3.grantPermission({

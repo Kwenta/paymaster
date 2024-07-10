@@ -79,7 +79,7 @@ contract MarginPaymaster is IPaymaster, Zap {
             uint128(actualGasCostInWei), // TODO: account for gas costs of postOp func
             address(weth),
             address(_USDC)
-        ) * 110) / 100; // 10% slippage
+        ) * 110) / 100; // allow for 10% slippage
         uint256 USDCToSwapForWETH = costOfGasInUSDC;
         address sender = abi.decode(context, (address));
         uint256 availableUSDCInWallet = getUSDCAvailableInWallet(sender);

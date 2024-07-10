@@ -147,12 +147,12 @@ contract MarginPaymasterTest is Bootstrap {
         assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
         assertEq(usdc.balanceOf(sender), 0);
         assertEq(usdc.balanceOf(marginPaymasterAddress), 0);
-        // uint256 colAmount = perpsMarketProxy.getCollateralAmount(
-        //     account.accountId(),
-        //     sUSDId
-        // );
-        // assertGt(colAmount, 4 ether);
-        // assertLt(colAmount, 5 ether);
+        uint256 colAmount = perpsMarketProxy.getCollateralAmount(
+            account.accountId(),
+            sUSDId
+        );
+        assertGt(colAmount, 4 ether);
+        assertLt(colAmount, 5 ether);
     }
 
     function testTransferToWalletAndApprove() public {
