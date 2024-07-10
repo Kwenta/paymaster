@@ -68,11 +68,11 @@ contract MarginPaymaster is IPaymaster, Zap {
         (, int24 tick, , , , , ) = pool.slot0();
 
         uint256 costOfGasInUSDC = OracleLibrary.getQuoteAtTick(
-            tick, // int24 tick
-            uint128(actualGasCostInWei), // uint128 baseAmount TODO: account for gas costs of postOp func
-            address(weth), // address baseToken
-            address(_USDC) // address quoteToken
-        );
+            tick,
+            uint128(actualGasCostInWei), // TODO: account for gas costs of postOp func
+            address(weth),
+            address(_USDC)
+        ) * 110 / 100;
         uint256 costOfGasInsUSD = costOfGasInUSDC * 1e12;
 
         address sender = abi.decode(context, (address));
@@ -84,39 +84,20 @@ contract MarginPaymaster is IPaymaster, Zap {
             -int256(costOfGasInsUSD)
         );
         uint256 usdcWithdrawn = _zapOut(costOfGasInsUSD);
-        console.log("actualGasCostInWei", actualGasCostInWei); // 43381320000000 = 0.00004338132 ETH = 0.13 USD
+        console.log("actualGasCostInWei", actualGasCostInWei); // 43350920000000 = 0.00004335092 ETH = 0.13 USD
 
         IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter
             .ExactInputSingleParams({
                 tokenIn: address(_USDC),
                 tokenOut: address(weth),
-                // note: aerdrome actually has higher liquidity https://www.geckoterminal.com/base/pools/0xb2cc224c1c9fee385f8ad6a55b4d94e92359dc59
                 fee: 500, // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
                 recipient: address(this),
-                // TODO: add on postOp cost
                 amountIn: usdcWithdrawn,
-                amountOutMinimum: 0, // change to: actualGasCostInWei
+                amountOutMinimum: actualGasCostInWei, // TODO: should this be required? -> could cause failures
                 sqrtPriceLimitX96: 0
             });
         uint256 amountOut = uniV3Router.exactInputSingle(params);
         weth.withdraw(amountOut);
-
-        // // uint256 thing = OracleLibrary.checkFullMathMulDiv(100, 30, 3);
-        // // console.log('thing :', thing);
-        // uint256 quoteAmountA = OracleLibrary.getQuoteAtTick(
-        //     tick, // int24 tick
-        //     1 ether, // uint128 baseAmount
-        //     0x4200000000000000000000000000000000000006, // address baseToken
-        //     0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 // address quoteToken
-        // );
-        // console.log('quoteAmountA :', quoteAmountA); // this tells me how much USDC for 1 WETH
-        // uint256 quoteAmountB = OracleLibrary.getQuoteAtTick(
-        //     tick, // int24 tick
-        //     1e6, // uint128 baseAmount
-        //     0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, // address baseToken
-        //     0x4200000000000000000000000000000000000006 // address quoteToken
-        // );
-        // console.log('quoteAmountB :', quoteAmountB); // this tells me how much WETH for 1 USDC
     }
 
     receive() external payable {}
