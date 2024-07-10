@@ -36,6 +36,8 @@ contract BaseParameters {
     // https://basescan.org/token/0x4200000000000000000000000000000000000006
     address public constant WETH = 0x4200000000000000000000000000000000000006;
 
+    address public constant UNI_WETH_USDC_POOL = 0xd0b53D9277642d899DF5C87A3966A349A798F224;
+
     // https://usecannon.com/packages/synthetix-spot-market/3.3.5/84531-andromeda
     uint128 public constant SUSDC_SPOT_MARKET_ID = 1;
 }
