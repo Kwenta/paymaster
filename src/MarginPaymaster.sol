@@ -48,12 +48,20 @@ contract MarginPaymaster is IPaymaster, Zap {
         _USDC.approve(_uniV3Router, type(uint256).max);
     }
 
+    modifier onlyEntryPoint() {
+        if (msg.sender != entryPoint) revert InvalidEntryPoint();
+        _;
+    }
+
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32,
         uint256
-    ) external returns (bytes memory context, uint256 validationData) {
-        if (msg.sender != entryPoint) revert InvalidEntryPoint();
+    )
+        external
+        onlyEntryPoint
+        returns (bytes memory context, uint256 validationData)
+    {
         context = abi.encode(userOp.sender); // passed to the postOp method
         validationData = 0; // 0 means accept sponsorship, 1 means reject
     }
@@ -62,17 +70,15 @@ contract MarginPaymaster is IPaymaster, Zap {
         PostOpMode,
         bytes calldata context,
         uint256 actualGasCostInWei
-    ) external {
-        if (msg.sender != entryPoint) revert InvalidEntryPoint();
-
+    ) external onlyEntryPoint {
         (, int24 tick, , , , , ) = pool.slot0();
 
-        uint256 costOfGasInUSDC = OracleLibrary.getQuoteAtTick(
+        uint256 costOfGasInUSDC = (OracleLibrary.getQuoteAtTick(
             tick,
-            uint128(actualGasCostInWei), // TODO: account for gas costs of postOp func
+            uint128(actualGasCostInWei),
             address(weth),
             address(_USDC)
-        ) * 110 / 100;
+        ) * 110) / 100; // TODO: account for gas costs of postOp func
         uint256 costOfGasInsUSD = costOfGasInUSDC * 1e12;
 
         address sender = abi.decode(context, (address));
