@@ -103,7 +103,6 @@ contract MarginPaymaster is IPaymaster, Zap {
                 );
             }
 
-            // pull funds from margin
             uint256 sUSDToWithdrawFromMargin = (costOfGasInUSDC -
                 availableUSDCInWallet) * 1e12;
             /// @dev: note, this impl assumes the user has only one account
@@ -111,11 +110,13 @@ contract MarginPaymaster is IPaymaster, Zap {
             uint128 accountId = uint128(
                 snxV3AccountsModule.tokenOfOwnerByIndex(sender, 0)
             );
+            // pull sUSD from margin
             perpsMarketSNXV3.modifyCollateral(
                 accountId,
                 sUSDId,
                 -int256(sUSDToWithdrawFromMargin)
             );
+            // zap sUSD into USDC
             USDCToSwapForWETH =
                 _zapOut(sUSDToWithdrawFromMargin) +
                 availableUSDCInWallet;
@@ -123,6 +124,7 @@ contract MarginPaymaster is IPaymaster, Zap {
 
         console.log("actualGasCostInWei", actualGasCostInWei); // 43350920000000 = 0.00004335092 ETH = 0.13 USD
 
+        // swap USDC for WETH
         IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter
             .ExactInputSingleParams({
                 tokenIn: address(_USDC),
@@ -134,6 +136,7 @@ contract MarginPaymaster is IPaymaster, Zap {
                 sqrtPriceLimitX96: 0
             });
         uint256 amountOut = uniV3Router.exactInputSingle(params);
+        // SWAP WETH for ETH
         weth.withdraw(amountOut);
     }
 
