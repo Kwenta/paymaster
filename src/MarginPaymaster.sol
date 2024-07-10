@@ -80,9 +80,8 @@ contract MarginPaymaster is IPaymaster, Zap {
             address(weth),
             address(_USDC)
         ) * 110) / 100; // 10% slippage
-
+        uint256 USDCToSwapForWETH = costOfGasInUSDC;
         address sender = abi.decode(context, (address));
-
         uint256 availableUSDCInWallet = getUSDCAvailableInWallet(sender);
 
         // draw funds from wallet before accessing margin
@@ -108,7 +107,7 @@ contract MarginPaymaster is IPaymaster, Zap {
                 sUSDId,
                 -int256(sUSDToWithdrawFromMargin)
             );
-            costOfGasInUSDC =
+            USDCToSwapForWETH =
                 _zapOut(sUSDToWithdrawFromMargin) +
                 availableUSDCInWallet;
         }
@@ -121,7 +120,7 @@ contract MarginPaymaster is IPaymaster, Zap {
                 tokenOut: address(weth),
                 fee: 500, // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
                 recipient: address(this),
-                amountIn: costOfGasInUSDC,
+                amountIn: USDCToSwapForWETH,
                 amountOutMinimum: actualGasCostInWei, // TODO: should this be required? -> could cause failures
                 sqrtPriceLimitX96: 0
             });
