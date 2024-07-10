@@ -65,9 +65,7 @@ contract MarginPaymaster is IPaymaster, Zap {
     ) external {
         if (msg.sender != entryPoint) revert InvalidEntryPoint();
 
-        (, int24 tick, , , , , ) = IUniswapV3Pool(
-            0xd0b53D9277642d899DF5C87A3966A349A798F224
-        ).slot0();
+        (, int24 tick, , , , , ) = pool.slot0();
 
         uint256 costOfGasInUSDC = OracleLibrary.getQuoteAtTick(
             tick, // int24 tick
