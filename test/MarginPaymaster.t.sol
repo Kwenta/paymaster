@@ -8,7 +8,7 @@ import {MarginPaymaster, IPaymaster} from "src/MarginPaymaster.sol";
 import {console} from "forge-std/console.sol";
 
 contract MarginPaymasterTest is Bootstrap {
-    uint256 constant BASE_BLOCK_NUMBER = 16841532;
+    uint256 constant BASE_BLOCK_NUMBER = 16915026;
     UserOperation internal userOp;
     bytes32 internal constant ADMIN_PERMISSION = "ADMIN";
     address constant USDC_MASTER_MINTER =
