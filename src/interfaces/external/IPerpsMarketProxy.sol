@@ -21,6 +21,8 @@ interface IPerpsMarketProxy {
         uint128 synthMarketId
     ) external view returns (uint256);
 
+    function getAccountTokenAddress() external view returns (address accountNftToken);
+
     /// @notice Returns the address that owns a given account, as recorded by the system.
     /// @param accountId The account id whose owner is being retrieved.
     /// @return owner The owner of the given account id.

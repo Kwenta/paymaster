@@ -11,6 +11,7 @@ import {Zap} from "lib/zap/src/Zap.sol";
 import {OracleLibrary} from "src/libraries/OracleLibrary.sol";
 import {IUniswapV3Pool} from "src/interfaces/external/IUniswapV3Pool.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {INftModule} from "src/interfaces/external/INftModule.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -25,6 +26,7 @@ contract MarginPaymaster is IPaymaster, Zap {
     IWETH9 public immutable weth;
     IUniswapV3Pool public immutable pool;
     uint128 public constant sUSDId = 0;
+    INftModule public immutable snxV3AccountsModule;
 
     error InvalidEntryPoint();
 
@@ -47,6 +49,9 @@ contract MarginPaymaster is IPaymaster, Zap {
         weth = IWETH9(_weth);
         pool = IUniswapV3Pool(_pool);
         _USDC.approve(_uniV3Router, type(uint256).max);
+        snxV3AccountsModule = INftModule(
+            perpsMarketSNXV3.getAccountTokenAddress()
+        );
     }
 
     modifier onlyEntryPoint() {
@@ -101,9 +106,11 @@ contract MarginPaymaster is IPaymaster, Zap {
             // pull funds from margin
             uint256 sUSDToWithdrawFromMargin = (costOfGasInUSDC -
                 availableUSDCInWallet) * 1e12;
-            // TODO: think, can this be pulled elsehow
-            // this current impl would require a custom account module
-            uint128 accountId = MockAccount(sender).accountId();
+            /// @dev: note, this impl assumes the user has only one account
+            /// @dev: further development efforts would be required to support multiple accounts
+            uint128 accountId = uint128(
+                snxV3AccountsModule.tokenOfOwnerByIndex(sender, 0)
+            );
             perpsMarketSNXV3.modifyCollateral(
                 accountId,
                 sUSDId,
