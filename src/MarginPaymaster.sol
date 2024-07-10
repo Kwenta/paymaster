@@ -88,6 +88,7 @@ contract MarginPaymaster is IPaymaster, Zap {
     // then there may be funds that dissapear after execution stage
     // 3. userop is approve of USDC
     // that could change the amount of USDC available to pull
+    // 4. handle when mix of account balance and margin is enough to conver gas fees
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32,
@@ -105,11 +106,15 @@ contract MarginPaymaster is IPaymaster, Zap {
             sender
         );
 
+        // user can pay directly from wallet
+        // TODO: what if the userOp leads to a drop in USDC balance of the wallet?
         if (available >= maxCostInUSDC) {
             return (context, 0); // 0 means accept sponsorship, 1 means reject
         }
 
-        if (balance >= maxCostInUSDC && available < maxCostInUSDC) {
+        bool hasSufficientBalance = balance >= maxCostInUSDC;
+        bool insufficientApproved = available < maxCostInUSDC;
+        if (hasSufficientBalance && insufficientApproved) {
             // as the users balance is sufficient, but they have not yet approved the paymaster
             // if the function call is to approve the paymaster, then we can accept the sponsorship
             bytes memory approvalCalldata = abi.encodeWithSelector(
