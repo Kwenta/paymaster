@@ -151,7 +151,6 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
 
             uint256 sUSDToWithdrawFromMargin = (costOfGasInUSDC -
                 availableUSDCInWallet) * 1e12;
-            // TODO: handle users who don't have an snx account or margin or enough margin
             uint256 withdrawn = withdrawFromMargin(
                 sender,
                 sUSDToWithdrawFromMargin
