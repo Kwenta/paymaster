@@ -20,6 +20,7 @@ contract MarginPaymasterTest is Bootstrap {
     address constant USDC_MASTER_MINTER =
         0x2230393EDAD0299b7E7B59F20AA856cD1bEd52e1;
     uint128 constant sUSDId = 0;
+    uint256 internal initialStake = 10 ether;
 
     /*//////////////////////////////////////////////////////////////
                                  SETUP
@@ -41,6 +42,8 @@ contract MarginPaymasterTest is Bootstrap {
         entryPoint.depositTo{value: initialPaymasterBalance}(
             marginPaymasterAddress
         );
+        vm.deal(marginPaymasterAddress, initialStake);
+        marginPaymaster.stake(initialStake, 10 weeks);
 
         bytes memory initCode = abi.encodePacked(
             address(accountFactory),
@@ -179,7 +182,7 @@ contract MarginPaymasterTest is Bootstrap {
 
     function testStake() public {
         uint256 stakeAmount = 1e18; // 1 ETH
-        uint32 unstakeDelaySec = 3600; // 1 hour
+        uint32 unstakeDelaySec = 20 weeks; // 1 hour
 
         vm.deal(marginPaymasterAddress, stakeAmount);
 
@@ -189,7 +192,7 @@ contract MarginPaymasterTest is Bootstrap {
         // Check if the stake was successful
         IStakeManager.DepositInfo memory depositInfo = entryPoint
             .getDepositInfo(address(marginPaymaster));
-        assertEq(depositInfo.stake, stakeAmount);
+        assertEq(depositInfo.stake, stakeAmount + initialStake);
         assertEq(depositInfo.unstakeDelaySec, unstakeDelaySec);
     }
 
@@ -204,7 +207,7 @@ contract MarginPaymasterTest is Bootstrap {
 
     function testUnlockStake() public {
         uint256 stakeAmount = 1e18; // 1 ETH
-        uint32 unstakeDelaySec = 3600; // 1 hour
+        uint32 unstakeDelaySec = 20 weeks; // 1 hour
 
         vm.deal(marginPaymasterAddress, stakeAmount);
 
@@ -217,7 +220,7 @@ contract MarginPaymasterTest is Bootstrap {
         // Check if the stake is unlocked
         IStakeManager.DepositInfo memory depositInfo = entryPoint
             .getDepositInfo(address(marginPaymaster));
-        assertEq(depositInfo.stake, stakeAmount);
+        assertEq(depositInfo.stake, stakeAmount + initialStake);
         assertEq(depositInfo.unstakeDelaySec, unstakeDelaySec);
         assertGt(depositInfo.withdrawTime, 0);
     }
@@ -230,7 +233,7 @@ contract MarginPaymasterTest is Bootstrap {
 
     function testWithdrawStake() public {
         uint256 stakeAmount = 1e18; // 1 ETH
-        uint32 unstakeDelaySec = 3600; // 1 hour
+        uint32 unstakeDelaySec = 20 weeks; // 1 hour
         address payable withdrawAddress = payable(address(0x321));
 
         vm.deal(marginPaymasterAddress, stakeAmount);
