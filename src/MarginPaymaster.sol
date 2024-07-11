@@ -81,14 +81,6 @@ contract MarginPaymaster is IPaymaster, Zap {
                                VALIDATION
     //////////////////////////////////////////////////////////////*/
 
-    // potential edgcases:
-    // 1. userop is to transferFrom USDC to the sender account
-    // then there may be funds available that don't show up
-    // 2. userOp is transfer of USDC
-    // then there may be funds that dissapear after execution stage
-    // 3. userop is approve of USDC
-    // that could change the amount of USDC available to pull
-    // 4. handle when mix of account balance and margin is enough to conver gas fees
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32,
@@ -100,54 +92,8 @@ contract MarginPaymaster is IPaymaster, Zap {
         returns (bytes memory context, uint256 validationData)
     {
         address sender = userOp.sender;
+        validationData = 0; // 0 means accept sponsorship, 1 means reject
         context = abi.encode(sender); // passed to the postOp method
-        uint256 maxCostInUSDC = getCostOfGasInUSDC(maxCostInWei);
-        (uint256 available, uint256 balance, ) = getUSDCAvailableInWallet(
-            sender
-        );
-
-        // user can pay directly from wallet
-        // TODO: what if the userOp leads to a drop in USDC balance of the wallet?
-        if (available >= maxCostInUSDC) {
-            return (context, 0); // 0 means accept sponsorship, 1 means reject
-        }
-
-        bool hasSufficientBalance = balance >= maxCostInUSDC;
-        bool insufficientApproved = available < maxCostInUSDC;
-        if (hasSufficientBalance && insufficientApproved) {
-            // as the users balance is sufficient, but they have not yet approved the paymaster
-            // if the function call is to approve the paymaster, then we can accept the sponsorship
-            bytes memory approvalCalldata = abi.encodeWithSelector(
-                _USDC.approve.selector,
-                address(this),
-                type(uint256).max
-            );
-            // slice the correct section of the user op calldata out to compare
-            // TODO: actually calculate approval amount rather than only allowing type(uint256).max
-            bytes memory userOpCallData = userOp.callData[132:200];
-            if (keccak256(userOpCallData) == keccak256(approvalCalldata)) {
-                return (context, 0); // 0 means accept sponsorship, 1 means reject
-            }
-        }
-
-        // TODO: handle when account has sufficient margin to cover
-        uint256 accountBalance = snxV3AccountsModule.balanceOf(sender);
-        if (accountBalance > 0) {
-            uint128 accountId = getWalletAccountId(sender);
-            // TODO: check if admin rights are provided to withdraw from margin
-            // TODO: if not, then check if the userOp is to grantPermission for paymaster
-            // uint256 marginOfSender =
-        }
-
-        // TODO: remove this mock account dependency
-        bytes memory setupAccountSelector = abi.encodePacked(
-            MockAccount.setupAccount.selector
-        );
-        if (keccak256(setupAccountSelector) == keccak256(userOp.callData)) {
-            return (context, 0); // 0 means accept sponsorship, 1 means reject
-        }
-
-        validationData = 1; // 0 means accept sponsorship, 1 means reject
     }
 
     /*//////////////////////////////////////////////////////////////
