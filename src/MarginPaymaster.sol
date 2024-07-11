@@ -36,8 +36,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     uint128 public constant sUSDId = 0;
     INftModule public immutable snxV3AccountsModule;
     uint24 constant POOL_FEE = 500; // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
-    bytes32 internal constant PERPS_MODIFY_COLLATERAL_PERMISSION =
+    bytes32 public constant PERPS_MODIFY_COLLATERAL_PERMISSION =
         "PERPS_MODIFY_COLLATERAL";
+    uint32 public constant TWAP_PERIOD = 300; // 5 minutes
 
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -215,12 +216,13 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     function getCostOfGasInUSDC(
         uint256 gasCostInWei
     ) internal view returns (uint256) {
-        // TODO: use arithmeticMeanTick
-        // (int24 arithmeticMeanTick, ) = OracleLibrary.consult(pool, secondsAgo);
-        (, int24 tick, , , , , ) = pool.slot0();
+        (int24 arithmeticMeanTick, ) = OracleLibrary.consult(
+            address(pool),
+            TWAP_PERIOD
+        );
         return
             (OracleLibrary.getQuoteAtTick(
-                tick,
+                arithmeticMeanTick,
                 uint128(gasCostInWei),
                 address(weth),
                 address(_USDC)
