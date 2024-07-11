@@ -27,6 +27,8 @@ interface IPerpsMarketProxy {
         uint128 accountId
     ) external view returns (int256 withdrawableMargin);
 
+    function revokePermission(uint128 accountId, bytes32 permission, address user) external;
+
     /// @notice Returns the address that owns a given account, as recorded by the system.
     /// @param accountId The account id whose owner is being retrieved.
     /// @return owner The owner of the given account id.

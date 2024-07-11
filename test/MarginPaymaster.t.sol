@@ -501,6 +501,58 @@ contract MarginPaymasterTest is Bootstrap {
         assertGt(usdc.balanceOf(marginPaymasterAddress), 0);
     }
 
+    function testUnauthorizedToWithdrawFromMargin() public {
+        ops.push(userOp);
+
+        mintUSDC(address(this), 5 * 1e6);
+        usdc.approve(sender, type(uint256).max);
+
+        vm.prank(bundler);
+        entryPoint.handleOps(ops, bundler);
+
+        uint128 accountId = account.accountId();
+        vm.prank(sender);
+        perpsMarketProxy.revokePermission(
+            accountId,
+            ADMIN_PERMISSION,
+            marginPaymasterAddress
+        );
+
+        ops.pop();
+        uint256 nonce = entryPoint.getNonce(sender, 0);
+        userOp.nonce = nonce;
+        bytes memory initCode;
+        userOp.initCode = initCode;
+        bytes memory newcalldata = abi.encodeWithSelector(
+            usdc.approve.selector,
+            address(0x654),
+            type(uint256).max
+        );
+        userOp.callData = abi.encodeWithSelector(
+            MockAccount.execute.selector,
+            address(usdc),
+            0,
+            newcalldata
+        );
+        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
+        userOp.signature = bytes.concat(r, s, bytes1(v));
+        ops.push(userOp);
+
+        uint256 balanceOfPaymasterBefore = usdc.balanceOf(
+            address(marginPaymaster)
+        );
+
+        mintUSDC(sender, 1e3);
+
+        vm.prank(bundler);
+        entryPoint.handleOps(ops, bundler);
+
+        assertEq(usdc.balanceOf(sender), 0);
+        assertEq(usdc.balanceOf(marginPaymasterAddress), balanceOfPaymasterBefore + 1e3);
+    }
+
     /*//////////////////////////////////////////////////////////////
                              ACCESS CONTROL
     //////////////////////////////////////////////////////////////*/

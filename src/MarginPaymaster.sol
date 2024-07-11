@@ -255,7 +255,6 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         if (accountBalance == 0) return 0;
 
         uint128 accountId = getWalletAccountId(sender);
-        // TODO: test the edgecase isAuthorized = false
         bool isAuthorized = perpsMarketSNXV3.isAuthorized(
             accountId,
             PERPS_MODIFY_COLLATERAL_PERMISSION,
