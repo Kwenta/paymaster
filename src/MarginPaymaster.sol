@@ -94,6 +94,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         authorizers[authorizer] = status;
     }
 
+    /// @notice We rely entirely on the back-end to decide which transactions should be sponsored
+    /// @notice if the user has USDC available in their wallet or margin, we will use that
+    /// @notice if they do not, the paymaster will pay
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 userOpHash,
@@ -117,6 +120,8 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                                 POST OP
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice attempt to pull funds from user's wallet, if insufficient, pull from margin
+    /// @notice if insufficient margin, pull whatever is available
     function postOp(
         PostOpMode,
         bytes calldata context,
