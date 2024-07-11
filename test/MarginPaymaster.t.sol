@@ -83,6 +83,8 @@ contract MarginPaymasterTest is Bootstrap {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
         signature = bytes.concat(r, s, bytes1(v));
         userOp.signature = signature;
+
+        marginPaymaster.setAuthorizer(backEnd, true);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -150,6 +152,18 @@ contract MarginPaymasterTest is Bootstrap {
         assertGt(sender.code.length, 0);
     }
 
+    function testUserOpRejectedIfBackEndIsUnauthorized() public {
+        ops.push(userOp);
+
+        // Ensure backEnd is unauthorized
+        marginPaymaster.setAuthorizer(backEnd, false);
+
+        vm.prank(bundler);
+        vm.expectRevert();
+        entryPoint.handleOps(ops, backEnd);
+    }
+
+
     function testAccountSetup() public {
         ops.push(userOp);
 
@@ -212,6 +226,11 @@ contract MarginPaymasterTest is Bootstrap {
             0,
             approvalCalldata
         );
+        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
+        userOp.signature = bytes.concat(r, s, bytes1(v));
+
         ops.push(userOp);
 
         mintUSDC(sender, 1000 * 1e6);

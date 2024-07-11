@@ -96,7 +96,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 userOpHash,
-        uint256 maxCostInWei
+        uint256
     )
         external
         view
@@ -107,11 +107,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             ECDSA.toEthSignedMessageHash(userOpHash),
             userOp.signature
         );
-
-        address sender = userOp.sender;
-        // validationData = owner == recovered ? 0 : 1
-        validationData = 0; // 0 means accept sponsorship, 1 means reject
-        context = abi.encode(sender); // passed to the postOp method
+        bool isAuthorized = authorizers[recovered];
+        validationData = isAuthorized ? 0 : 1;
+        context = abi.encode(userOp.sender); // passed to the postOp method
     }
 
     /*//////////////////////////////////////////////////////////////
