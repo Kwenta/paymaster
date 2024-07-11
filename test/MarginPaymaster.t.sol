@@ -68,7 +68,10 @@ contract MarginPaymasterTest is Bootstrap {
             sender: sender,
             nonce: nonce,
             initCode: initCode,
-            callData: abi.encodeWithSelector(MockAccount.setupAccount.selector),
+            callData: abi.encodeWithSelector(
+                MockAccount.setupAccount.selector,
+                5 * 1e6
+            ),
             callGasLimit: 2_000_000,
             verificationGasLimit: 2_000_000,
             preVerificationGas: 200_000,
@@ -550,7 +553,31 @@ contract MarginPaymasterTest is Bootstrap {
         entryPoint.handleOps(ops, bundler);
 
         assertEq(usdc.balanceOf(sender), 0);
-        assertEq(usdc.balanceOf(marginPaymasterAddress), balanceOfPaymasterBefore + 1e3);
+        assertEq(
+            usdc.balanceOf(marginPaymasterAddress),
+            balanceOfPaymasterBefore + 1e3
+        );
+    }
+
+    function testInsufficentMargin() public {
+        mintUSDC(address(this), 1e3);
+        usdc.approve(sender, type(uint256).max);
+
+        userOp.callData = abi.encodeWithSelector(
+            MockAccount.setupAccount.selector,
+            1e3
+        );
+        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
+        userOp.signature = bytes.concat(r, s, bytes1(v));
+
+        ops.push(userOp);
+
+        vm.prank(bundler);
+        entryPoint.handleOps(ops, bundler);
+
+        assertEq(usdc.balanceOf(marginPaymasterAddress), 1e3);
     }
 
     /*//////////////////////////////////////////////////////////////

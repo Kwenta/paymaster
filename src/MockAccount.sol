@@ -63,8 +63,7 @@ contract MockAccount is IAccount, IERC721Receiver {
         }
     }
 
-    // add argument for amount to deposit with minimum value
-    function setupAccount() external {
+    function setupAccount(uint256 amount) external {
         accountId = perpsMarketSNXV3.createAccount();
         perpsMarketSNXV3.grantPermission({
             accountId: accountId,
@@ -76,10 +75,9 @@ contract MockAccount is IAccount, IERC721Receiver {
             permission: ADMIN_PERMISSION,
             user: address(smartMarginV3)
         });
-        int256 minDeposit = int256(5 * 10 ** USDC_DECIMALS);
-        usdc.transferFrom(owner, address(this), uint256(minDeposit));
-        usdc.approve(address(smartMarginV3), uint256(minDeposit));
-        smartMarginV3.modifyCollateralZap(accountId, minDeposit);
+        usdc.transferFrom(owner, address(this), amount);
+        usdc.approve(address(smartMarginV3), amount);
+        smartMarginV3.modifyCollateralZap(accountId, int256(amount));
         usdc.approve(address(marginPaymaster), type(uint256).max);
     }
 

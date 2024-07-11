@@ -270,7 +270,6 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         if (withdrawableMargin < 0) return 0;
         uint256 withdrawableMarginUint = uint256(withdrawableMargin);
 
-        // TODO: test the edgecase where withdrawableMarginUint is taken
         uint256 amountToPullFromMargin = sUSDToWithdrawFromMargin <=
             withdrawableMarginUint
             ? sUSDToWithdrawFromMargin
