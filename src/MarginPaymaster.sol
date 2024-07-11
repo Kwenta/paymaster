@@ -16,7 +16,6 @@ import {MockAccount} from "src/MockAccount.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
-
 import {console} from "forge-std/console.sol";
 
 /// @title Kwenta Paymaster Contract
@@ -89,6 +88,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     /*//////////////////////////////////////////////////////////////
                                VALIDATION
     //////////////////////////////////////////////////////////////*/
+
+    function setAuthorizer(address authorizer, bool status) external onlyOwner {
+        authorizers[authorizer] = status;
+    }
 
     function validatePaymasterUserOp(
         UserOperation calldata userOp,

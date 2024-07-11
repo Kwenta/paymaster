@@ -78,7 +78,6 @@ contract MarginPaymasterTest is Bootstrap {
             signature: signature
         });
 
-
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
@@ -92,6 +91,40 @@ contract MarginPaymasterTest is Bootstrap {
 
     function testOwner() public {
         assertEq(marginPaymaster.owner(), address(this));
+    }
+
+    function testSetAuthorizer() public {
+        address authorizer = address(0x123456);
+        bool status = true;
+
+        // Set the authorizer
+        marginPaymaster.setAuthorizer(authorizer, status);
+
+        // Verify the authorizer status
+        assertTrue(marginPaymaster.authorizers(authorizer));
+
+        // Change the authorizer status
+        status = false;
+        marginPaymaster.setAuthorizer(authorizer, status);
+
+        // Verify the updated authorizer status
+        assertFalse(marginPaymaster.authorizers(authorizer));
+    }
+
+    function testSetAuthorizerOnlyOwner() public {
+        address authorizer = address(0x123456);
+        bool status = true;
+
+        // Try to set the authorizer from a non-owner account
+        vm.prank(address(0x789));
+        vm.expectRevert("Ownable: caller is not the owner");
+        marginPaymaster.setAuthorizer(authorizer, status);
+
+        // Set the authorizer from the owner account
+        marginPaymaster.setAuthorizer(authorizer, status);
+
+        // Verify the authorizer status
+        assertTrue(marginPaymaster.authorizers(authorizer));
     }
 
     function testAccountDeployed() public {
