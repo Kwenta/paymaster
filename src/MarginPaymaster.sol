@@ -14,13 +14,15 @@ import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.so
 import {INftModule} from "src/interfaces/external/INftModule.sol";
 import {MockAccount} from "src/MockAccount.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+
 
 import {console} from "forge-std/console.sol";
 
 /// @title Kwenta Paymaster Contract
 /// @notice Responsible for paying tx gas fees using trader margin
 /// @author tommyrharper (zeroknowledgeltd@gmail.com)
-contract MarginPaymaster is IPaymaster, Zap {
+contract MarginPaymaster is IPaymaster, Zap, Ownable {
     /*//////////////////////////////////////////////////////////////
                                IMMUTABLES
     //////////////////////////////////////////////////////////////*/
@@ -34,6 +36,12 @@ contract MarginPaymaster is IPaymaster, Zap {
     uint128 public constant sUSDId = 0;
     INftModule public immutable snxV3AccountsModule;
     uint24 constant POOL_FEE = 500; // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
+
+    /*//////////////////////////////////////////////////////////////
+                                 STATE
+    //////////////////////////////////////////////////////////////*/
+
+    mapping(address => bool) public authorizers;
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
