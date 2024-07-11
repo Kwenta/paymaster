@@ -36,6 +36,8 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     uint128 public constant sUSDId = 0;
     INftModule public immutable snxV3AccountsModule;
     uint24 constant POOL_FEE = 500; // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
+    bytes32 internal constant PERPS_MODIFY_COLLATERAL_PERMISSION =
+        "PERPS_MODIFY_COLLATERAL";
 
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -225,7 +227,20 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         address sender,
         uint256 sUSDToWithdrawFromMargin
     ) internal returns (uint256) {
+        // TODO: test the edgecase accountBalance = 0
+        uint256 accountBalance = snxV3AccountsModule.balanceOf(sender);
+        if (accountBalance == 0) return 0;
+
         uint128 accountId = getWalletAccountId(sender);
+        // TODO: test the edgecase isAuthorized = false
+        bool isAuthorized = perpsMarketSNXV3.isAuthorized(
+            accountId,
+            PERPS_MODIFY_COLLATERAL_PERMISSION,
+            address(this)
+        );
+
+        if (!isAuthorized) return 0;
+
         int256 withdrawableMargin = perpsMarketSNXV3.getWithdrawableMargin(
             accountId
         );
@@ -233,7 +248,8 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         if (withdrawableMargin < 0) return 0;
         uint256 withdrawableMarginUint = uint256(withdrawableMargin);
 
-        uint256 amountToPullFromMargin = sUSDToWithdrawFromMargin <
+        // TODO: test the edgecase where withdrawableMarginUint is taken
+        uint256 amountToPullFromMargin = sUSDToWithdrawFromMargin <=
             withdrawableMarginUint
             ? sUSDToWithdrawFromMargin
             : withdrawableMarginUint;
