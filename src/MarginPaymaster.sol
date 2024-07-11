@@ -117,7 +117,6 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                                 POST OP
     //////////////////////////////////////////////////////////////*/
 
-    // TODO: handle user not having enough funds
     function postOp(
         PostOpMode,
         bytes calldata context,
@@ -144,9 +143,12 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             uint256 sUSDToWithdrawFromMargin = (costOfGasInUSDC -
                 availableUSDCInWallet) * 1e12;
             // TODO: handle users who don't have an snx account or margin or enough margin
-            withdrawFromMargin(sender, sUSDToWithdrawFromMargin);
+            uint256 withdrawn = withdrawFromMargin(
+                sender,
+                sUSDToWithdrawFromMargin
+            );
             // zap sUSD into USDC
-            _zapOut(sUSDToWithdrawFromMargin);
+            _zapOut(withdrawn);
         }
     }
 
@@ -212,16 +214,33 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         return uint128(snxV3AccountsModule.tokenOfOwnerByIndex(wallet, 0));
     }
 
+    /// @notice withdraws sUSD from margin account
+    /// @notice if insufficent margin, pulls out whatever is available
     function withdrawFromMargin(
         address sender,
         uint256 sUSDToWithdrawFromMargin
-    ) internal {
+    ) internal returns (uint256) {
+        uint128 accountId = getWalletAccountId(sender);
+        int256 withdrawableMargin = perpsMarketSNXV3.getWithdrawableMargin(
+            accountId
+        );
+
+        if (withdrawableMargin < 0) return 0;
+        uint256 withdrawableMarginUint = uint256(withdrawableMargin);
+
+        uint256 amountToPullFromMargin = sUSDToWithdrawFromMargin <
+            withdrawableMarginUint
+            ? sUSDToWithdrawFromMargin
+            : withdrawableMarginUint;
+
         // pull sUSD from margin
         perpsMarketSNXV3.modifyCollateral(
-            getWalletAccountId(sender),
+            accountId,
             sUSDId,
-            -int256(sUSDToWithdrawFromMargin)
+            -int256(amountToPullFromMargin)
         );
+
+        return amountToPullFromMargin;
     }
 
     function swapUSDCForWETH(
