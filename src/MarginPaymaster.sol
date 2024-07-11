@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
+import {EntryPoint} from "@account-abstraction/contracts/core/EntryPoint.sol";
 import {IPaymaster, UserOperation} from "lib/account-abstraction/contracts/interfaces/IPaymaster.sol";
 import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 import {IV3SwapRouter} from "src/interfaces/external/IV3SwapRouter.sol";
@@ -26,7 +27,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                                IMMUTABLES
     //////////////////////////////////////////////////////////////*/
 
-    address public immutable entryPoint;
+    EntryPoint public immutable entryPoint;
     IEngine public immutable smartMarginV3;
     IPerpsMarketProxy public immutable perpsMarketSNXV3;
     IV3SwapRouter public immutable uniV3Router;
@@ -64,7 +65,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         address _weth,
         address _pool
     ) Zap(_usdc, _sUSDProxy, _spotMarketProxy, _sUSDCId) {
-        entryPoint = _entryPoint;
+        entryPoint = EntryPoint(payable(_entryPoint));
         smartMarginV3 = IEngine(_smartMarginV3);
         perpsMarketSNXV3 = IPerpsMarketProxy(_perpsMarketSNXV3);
         uniV3Router = IV3SwapRouter(_uniV3Router);
@@ -81,7 +82,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyEntryPoint() {
-        if (msg.sender != entryPoint) revert InvalidEntryPoint();
+        if (msg.sender != address(entryPoint)) revert InvalidEntryPoint();
         _;
     }
 
@@ -116,13 +117,13 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                                 POST OP
     //////////////////////////////////////////////////////////////*/
 
+    // TODO: handle user not having enough funds
     function postOp(
         PostOpMode,
         bytes calldata context,
         uint256 actualGasCostInWei
     ) external onlyEntryPoint {
         uint256 costOfGasInUSDC = getCostOfGasInUSDC(actualGasCostInWei); // TODO: account for gas costs of postOp func
-        uint256 USDCToSwapForWETH = costOfGasInUSDC;
         address sender = abi.decode(context, (address));
         (uint256 availableUSDCInWallet, , ) = getUSDCAvailableInWallet(sender);
 
@@ -145,20 +146,43 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             // TODO: handle users who don't have an snx account or margin or enough margin
             withdrawFromMargin(sender, sUSDToWithdrawFromMargin);
             // zap sUSD into USDC
-            USDCToSwapForWETH =
-                _zapOut(sUSDToWithdrawFromMargin) +
-                availableUSDCInWallet;
+            _zapOut(sUSDToWithdrawFromMargin);
         }
+    }
 
-        console.log("actualGasCostInWei", actualGasCostInWei); // 43350920000000 = 0.00004335092 ETH = 0.13 USD
+    /*//////////////////////////////////////////////////////////////
+                            FUND MANAGEMENT
+    //////////////////////////////////////////////////////////////*/
 
-        // TODO: remove these steps
+    function swapUSDCToETH(uint256 amountOutMinimum) external onlyOwner {
+        uint256 amountIn = _USDC.balanceOf(address(this));
         // swap USDC for WETH
-        uint256 amountOut = swapUSDCForWETH(USDCToSwapForWETH);
+        uint256 amountOut = swapUSDCForWETH(amountIn, amountOutMinimum);
         // unwrap WETH to ETH
         weth.withdraw(amountOut);
+    }
 
-        // TODO: add renew deposit logic if it is running low
+    function depositToEntryPoint(uint256 amount) external onlyOwner {
+        entryPoint.depositTo{value: amount}(address(this));
+    }
+
+    function stake(uint256 amount, uint32 unstakeDelaySec) external onlyOwner {
+        entryPoint.addStake{value: amount}(unstakeDelaySec);
+    }
+
+    function unlockStake() external onlyOwner {
+        entryPoint.unlockStake();
+    }
+
+    function withdrawStake(address payable withdrawAddress) external onlyOwner {
+        entryPoint.withdrawStake(withdrawAddress);
+    }
+
+    function withdrawTo(
+        address payable withdrawAddress,
+        uint256 withdrawAmount
+    ) external onlyOwner {
+        entryPoint.withdrawTo(withdrawAddress, withdrawAmount);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -200,7 +224,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         );
     }
 
-    function swapUSDCForWETH(uint256 amountIn) internal returns (uint256) {
+    function swapUSDCForWETH(
+        uint256 amountIn,
+        uint256 amountOutMinimum
+    ) internal returns (uint256) {
         IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter
             .ExactInputSingleParams({
                 tokenIn: address(_USDC),
@@ -208,7 +235,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                 fee: POOL_FEE,
                 recipient: address(this),
                 amountIn: amountIn,
-                amountOutMinimum: 0, // TODO: think, should this be actualGasCostInWei???
+                amountOutMinimum: amountOutMinimum,
                 sqrtPriceLimitX96: 0
             });
         return uniV3Router.exactInputSingle(params);

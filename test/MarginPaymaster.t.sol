@@ -5,6 +5,7 @@ import {Bootstrap} from "test/utils/Bootstrap.sol";
 import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
 import {AccountFactory, MockAccount} from "src/MockAccount.sol";
 import {MarginPaymaster, IPaymaster} from "src/MarginPaymaster.sol";
+import {IStakeManager} from "lib/account-abstraction/contracts/interfaces/IStakeManager.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {console} from "forge-std/console.sol";
 
@@ -37,7 +38,6 @@ contract MarginPaymasterTest is Bootstrap {
             smartMarginV3Address,
             usdcAddress
         );
-        vm.deal(address(this), initialPaymasterBalance);
         entryPoint.depositTo{value: initialPaymasterBalance}(
             marginPaymasterAddress
         );
@@ -88,7 +88,7 @@ contract MarginPaymasterTest is Bootstrap {
     }
 
     /*//////////////////////////////////////////////////////////////
-                                 TESTS
+                            MANAGEMENT TESTS
     //////////////////////////////////////////////////////////////*/
 
     function testOwner() public {
@@ -129,6 +129,171 @@ contract MarginPaymasterTest is Bootstrap {
         assertTrue(marginPaymaster.authorizers(authorizer));
     }
 
+    function testSwapUSDCToETH() public {
+        uint256 initialETHBalance = marginPaymasterAddress.balance;
+        uint256 amountOutMinimum = 1e18; // 1 ETH minimum output
+
+        // Mint USDC to the contract
+        mintUSDC(address(marginPaymaster), 5000 * 1e6);
+
+        // Swap USDC to ETH
+        marginPaymaster.swapUSDCToETH(amountOutMinimum);
+
+        // Check if ETH balance has increased
+        uint256 finalETHBalance = marginPaymasterAddress.balance;
+        assertGt(finalETHBalance, initialETHBalance);
+    }
+
+    function testSwapUSDCToETH_onlyOwner() public {
+        uint256 amountOutMinimum = 1e18; // 1 ETH minimum output
+
+        vm.prank(address(0x123)); // some non-owner address
+        vm.expectRevert("Ownable: caller is not the owner");
+        marginPaymaster.swapUSDCToETH(amountOutMinimum);
+    }
+
+    function testDepositToEntryPoint() public {
+        uint256 depositAmount = 1e18; // 1 ETH
+        vm.deal(marginPaymasterAddress, depositAmount);
+
+        // Deposit ETH to EntryPoint
+        marginPaymaster.depositToEntryPoint(depositAmount);
+
+        // Check if the deposit was successful
+        uint256 entryPointBalance = entryPoint.balanceOf(
+            address(marginPaymaster)
+        );
+        assertEq(entryPointBalance, depositAmount + initialPaymasterBalance);
+    }
+
+    function testDepositToEntryPoint_onlyOwner() public {
+        uint256 depositAmount = 1e18; // 1 ETH
+
+        vm.prank(address(0x123)); // some non-owner address
+        vm.expectRevert("Ownable: caller is not the owner");
+        marginPaymaster.depositToEntryPoint(depositAmount);
+    }
+
+    function testStake() public {
+        uint256 stakeAmount = 1e18; // 1 ETH
+        uint32 unstakeDelaySec = 3600; // 1 hour
+
+        vm.deal(marginPaymasterAddress, stakeAmount);
+
+        // Stake ETH in EntryPoint
+        marginPaymaster.stake(stakeAmount, unstakeDelaySec);
+
+        // Check if the stake was successful
+        IStakeManager.DepositInfo memory depositInfo = entryPoint
+            .getDepositInfo(address(marginPaymaster));
+        assertEq(depositInfo.stake, stakeAmount);
+        assertEq(depositInfo.unstakeDelaySec, unstakeDelaySec);
+    }
+
+    function testStake_onlyOwner() public {
+        uint256 stakeAmount = 1e18; // 1 ETH
+        uint32 unstakeDelaySec = 3600; // 1 hour
+
+        vm.prank(address(0x123)); // some non-owner address
+        vm.expectRevert("Ownable: caller is not the owner");
+        marginPaymaster.stake(stakeAmount, unstakeDelaySec);
+    }
+
+    function testUnlockStake() public {
+        uint256 stakeAmount = 1e18; // 1 ETH
+        uint32 unstakeDelaySec = 3600; // 1 hour
+
+        vm.deal(marginPaymasterAddress, stakeAmount);
+
+        // Stake ETH in EntryPoint
+        marginPaymaster.stake(stakeAmount, unstakeDelaySec);
+
+        // Unlock the stake
+        marginPaymaster.unlockStake();
+
+        // Check if the stake is unlocked
+        IStakeManager.DepositInfo memory depositInfo = entryPoint
+            .getDepositInfo(address(marginPaymaster));
+        assertEq(depositInfo.stake, stakeAmount);
+        assertEq(depositInfo.unstakeDelaySec, unstakeDelaySec);
+        assertGt(depositInfo.withdrawTime, 0);
+    }
+
+    function testUnlockStake_onlyOwner() public {
+        vm.prank(address(0x123)); // some non-owner address
+        vm.expectRevert("Ownable: caller is not the owner");
+        marginPaymaster.unlockStake();
+    }
+
+    function testWithdrawStake() public {
+        uint256 stakeAmount = 1e18; // 1 ETH
+        uint32 unstakeDelaySec = 3600; // 1 hour
+        address payable withdrawAddress = payable(address(0x321));
+
+        vm.deal(marginPaymasterAddress, stakeAmount);
+
+        // Stake ETH in EntryPoint
+        marginPaymaster.stake(stakeAmount, unstakeDelaySec);
+
+        // Unlock the stake
+        marginPaymaster.unlockStake();
+
+        // Fast forward time to allow withdrawal
+        vm.warp(block.timestamp + unstakeDelaySec);
+
+        // Withdraw the stake
+        marginPaymaster.withdrawStake(withdrawAddress);
+
+        // Check if the stake was withdrawn
+        IStakeManager.DepositInfo memory depositInfo = entryPoint
+            .getDepositInfo(address(marginPaymaster));
+        assertEq(depositInfo.stake, 0);
+        assertEq(depositInfo.unstakeDelaySec, 0);
+    }
+
+    function testWithdrawStake_onlyOwner() public {
+        address payable withdrawAddress = payable(address(0x321));
+        vm.prank(withdrawAddress); // some non-owner address
+        vm.expectRevert("Ownable: caller is not the owner");
+        marginPaymaster.withdrawStake(withdrawAddress);
+    }
+
+    function testWithdrawTo() public {
+        uint256 depositAmount = 1e18; // 1 ETH
+        address payable withdrawAddress = payable(address(0x321));
+
+        vm.deal(marginPaymasterAddress, depositAmount);
+
+        // Deposit ETH to EntryPoint
+        marginPaymaster.depositToEntryPoint(depositAmount);
+
+        // // // Withdraw from EntryPoint
+        marginPaymaster.withdrawTo(withdrawAddress, depositAmount);
+
+        // // // Check if the withdrawal was successful
+        uint256 entryPointBalance = entryPoint.balanceOf(
+            address(marginPaymaster)
+        );
+        assertEq(entryPointBalance, initialPaymasterBalance);
+
+        // Check if the funds were transferred to the withdrawAddress
+        uint256 withdrawAddressBalance = withdrawAddress.balance;
+        assertEq(withdrawAddressBalance, depositAmount);
+    }
+
+    function testWithdrawTo_onlyOwner() public {
+        uint256 depositAmount = 1e18; // 1 ETH
+        address payable withdrawAddress = payable(address(0x321));
+        // Attempt to withdraw from EntryPoint as a non-owner
+        vm.prank(withdrawAddress); // some non-owner address
+        vm.expectRevert("Ownable: caller is not the owner");
+        marginPaymaster.withdrawTo(withdrawAddress, depositAmount);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                             USER OP TESTS
+    //////////////////////////////////////////////////////////////*/
+
     function testAccountDeployed() public {
         ops.push(userOp);
 
@@ -163,7 +328,6 @@ contract MarginPaymasterTest is Bootstrap {
         entryPoint.handleOps(ops, backEnd);
     }
 
-
     function testAccountSetup() public {
         ops.push(userOp);
 
@@ -184,7 +348,7 @@ contract MarginPaymasterTest is Bootstrap {
         );
         assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
         assertEq(usdc.balanceOf(sender), 0);
-        assertEq(usdc.balanceOf(marginPaymasterAddress), 0);
+        assertGt(usdc.balanceOf(marginPaymasterAddress), 0);
         uint256 colAmount = perpsMarketProxy.getCollateralAmount(
             accountId,
             sUSDId
@@ -205,7 +369,7 @@ contract MarginPaymasterTest is Bootstrap {
 
         assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
         assertEq(usdc.balanceOf(sender), 0);
-        assertEq(usdc.balanceOf(marginPaymasterAddress), 0);
+        assertGt(usdc.balanceOf(marginPaymasterAddress), 0);
         uint256 colAmount = perpsMarketProxy.getCollateralAmount(
             account.accountId(),
             sUSDId
