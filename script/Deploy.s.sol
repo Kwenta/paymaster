@@ -14,7 +14,6 @@ import {MarginPaymaster} from "src/MarginPaymaster.sol";
 contract Setup is Script {
     function deploySystem(
         address entryPoint,
-        address smartMarginV3,
         address perpsMarketSNXV3,
         address usdc,
         address sUSDProxy,
@@ -26,7 +25,6 @@ contract Setup is Script {
     ) public returns (address payable) {
         MarginPaymaster marginPaymaster = new MarginPaymaster(
             entryPoint,
-            smartMarginV3,
             perpsMarketSNXV3,
             usdc,
             sUSDProxy,
@@ -50,7 +48,6 @@ contract DeployBase is Setup, BaseParameters {
 
         Setup.deploySystem(
             CANONICAL_ENTRY_POINT,
-            SMART_MARGIN_V3,
             PERPS_MARKET_PROXY_ANDROMEDA,
             USDC,
             USD_PROXY_ANDROMEDA,

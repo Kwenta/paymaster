@@ -6,7 +6,6 @@ import {IPaymaster, UserOperation} from "lib/account-abstraction/contracts/inter
 import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 import {IV3SwapRouter} from "src/interfaces/external/IV3SwapRouter.sol";
 import {IWETH9} from "src/interfaces/external/IWETH9.sol";
-import {IEngine} from "src/interfaces/IEngine.sol";
 import {MockAccount} from "src/MockAccount.sol";
 import {Zap} from "lib/zap/src/Zap.sol";
 import {OracleLibrary} from "src/libraries/OracleLibrary.sol";
@@ -25,7 +24,6 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     EntryPoint public immutable entryPoint;
-    IEngine public immutable smartMarginV3;
     IPerpsMarketProxy public immutable perpsMarketSNXV3;
     IV3SwapRouter public immutable uniV3Router;
     IWETH9 public immutable weth;
@@ -57,7 +55,6 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
 
     constructor(
         address _entryPoint,
-        address _smartMarginV3,
         address _perpsMarketSNXV3,
         address _usdc,
         address _sUSDProxy,
@@ -68,7 +65,6 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         address _pool
     ) Zap(_usdc, _sUSDProxy, _spotMarketProxy, _sUSDCId) {
         entryPoint = EntryPoint(payable(_entryPoint));
-        smartMarginV3 = IEngine(_smartMarginV3);
         perpsMarketSNXV3 = IPerpsMarketProxy(_perpsMarketSNXV3);
         uniV3Router = IV3SwapRouter(_uniV3Router);
         weth = IWETH9(_weth);

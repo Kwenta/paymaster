@@ -59,7 +59,6 @@ contract Bootstrap is Test {
             address(0),
             address(0),
             address(0),
-            address(0),
             0,
             address(0),
             address(0),
@@ -122,7 +121,6 @@ contract Bootstrap is Test {
 contract BootstrapLocal is Setup {
     function init(
         address entryPoint,
-        address smartMarginV3,
         address perpsMarketSNXV3,
         address usdc,
         address sUSDProxy,
@@ -134,7 +132,6 @@ contract BootstrapLocal is Setup {
     ) public returns (address payable) {
         address payable marginPaymasterAddress = Setup.deploySystem(
             entryPoint,
-            smartMarginV3,
             perpsMarketSNXV3,
             usdc,
             sUSDProxy,
@@ -169,7 +166,6 @@ contract BootstrapBase is Setup, BaseParameters {
     {
         address payable marginPaymasterAddress = Setup.deploySystem(
             CANONICAL_ENTRY_POINT,
-            SMART_MARGIN_V3,
             PERPS_MARKET_PROXY_ANDROMEDA,
             USDC,
             USD_PROXY_ANDROMEDA,
