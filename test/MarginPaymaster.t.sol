@@ -473,6 +473,34 @@ contract MarginPaymasterTest is Bootstrap {
         assertGt(usdcLeftInWallet, 0);
     }
 
+    function testNoAccountAvailable() public {
+        bytes memory approvalCalldata = abi.encodeWithSelector(
+            usdc.approve.selector,
+            marginPaymasterAddress,
+            type(uint256).max
+        );
+        userOp.callData = abi.encodeWithSelector(
+            MockAccount.execute.selector,
+            address(usdc),
+            0,
+            approvalCalldata
+        );
+        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
+        userOp.signature = bytes.concat(r, s, bytes1(v));
+
+        ops.push(userOp);
+
+        mintUSDC(sender, 1 * 1e3);
+
+        vm.prank(bundler);
+        entryPoint.handleOps(ops, bundler);
+
+        assertEq(usdc.balanceOf(sender), 0);
+        assertGt(usdc.balanceOf(marginPaymasterAddress), 0);
+    }
+
     /*//////////////////////////////////////////////////////////////
                              ACCESS CONTROL
     //////////////////////////////////////////////////////////////*/
