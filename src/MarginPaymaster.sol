@@ -45,6 +45,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     mapping(address => bool) public authorizers;
+    uint256 public percentageMarkup = 120; // 20% markup on gas costs
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -209,6 +210,12 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         _USDC.transfer(withdrawAddress, amount);
     }
 
+    function setPercentageMarkup(
+        uint256 newPercentageMarkup
+    ) external onlyOwner {
+        percentageMarkup = newPercentageMarkup;
+    }
+
     /*//////////////////////////////////////////////////////////////
                                 HELPERS
     //////////////////////////////////////////////////////////////*/
@@ -226,7 +233,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                 uint128(gasCostInWei),
                 address(weth),
                 address(_USDC)
-            ) * 110) / 100; // allow for 10% slippage TODO: think more carefully about this
+            ) * percentageMarkup) / 100;
     }
 
     function getWalletAccountId(

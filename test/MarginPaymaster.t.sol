@@ -337,6 +337,24 @@ contract MarginPaymasterTest is Bootstrap {
         marginPaymaster.withdrawUSDC(withdrawAddress, depositAmount);
     }
 
+    function testSetPercentageMarkup() public {
+        uint256 newPercentageMarkup = 150; // 150%
+
+        // Set the new percentage markup
+        marginPaymaster.setPercentageMarkup(newPercentageMarkup);
+
+        // Verify the percentage markup was updated
+        assertEq(marginPaymaster.percentageMarkup(), newPercentageMarkup);
+    }
+
+    function testSetPercentageMarkup_onlyOwner() public {
+        uint256 newPercentageMarkup = 150; // 150%
+        // Attempt to set the percentage markup as a non-owner
+        vm.prank(address(0x123)); // some non-owner address
+        vm.expectRevert("Ownable: caller is not the owner");
+        marginPaymaster.setPercentageMarkup(newPercentageMarkup);
+    }
+
     /*//////////////////////////////////////////////////////////////
                              USER OP TESTS
     //////////////////////////////////////////////////////////////*/
