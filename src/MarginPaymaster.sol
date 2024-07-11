@@ -155,8 +155,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                 sender,
                 sUSDToWithdrawFromMargin
             );
-            // zap sUSD into USDC
-            _zapOut(withdrawn);
+            if (withdrawn > 0) {
+                // zap sUSD into USDC
+                _zapOut(withdrawn);
+            }
         }
     }
 
@@ -249,7 +251,6 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         address sender,
         uint256 sUSDToWithdrawFromMargin
     ) internal returns (uint256) {
-        // TODO: test the edgecase accountBalance = 0
         uint256 accountBalance = snxV3AccountsModule.balanceOf(sender);
         if (accountBalance == 0) return 0;
 
