@@ -495,7 +495,7 @@ contract MarginPaymasterTest is Bootstrap {
 
         ops.push(userOp);
 
-        mintUSDC(sender, 1 * 1e3);
+        mintUSDC(sender, 1 * 1e2);
 
         vm.prank(bundler);
         entryPoint.handleOps(ops, bundler);
@@ -547,7 +547,7 @@ contract MarginPaymasterTest is Bootstrap {
             address(marginPaymaster)
         );
 
-        mintUSDC(sender, 1e3);
+        mintUSDC(sender, 1e2);
 
         vm.prank(bundler);
         entryPoint.handleOps(ops, bundler);
@@ -555,17 +555,17 @@ contract MarginPaymasterTest is Bootstrap {
         assertEq(usdc.balanceOf(sender), 0);
         assertEq(
             usdc.balanceOf(marginPaymasterAddress),
-            balanceOfPaymasterBefore + 1e3
+            balanceOfPaymasterBefore + 1e2
         );
     }
 
     function testInsufficentMargin() public {
-        mintUSDC(address(this), 1e3);
+        mintUSDC(address(this), 1e2);
         usdc.approve(sender, type(uint256).max);
 
         userOp.callData = abi.encodeWithSelector(
             MockAccount.setupAccount.selector,
-            1e3
+            1e2
         );
         bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
@@ -577,7 +577,7 @@ contract MarginPaymasterTest is Bootstrap {
         vm.prank(bundler);
         entryPoint.handleOps(ops, bundler);
 
-        assertEq(usdc.balanceOf(marginPaymasterAddress), 1e3);
+        assertEq(usdc.balanceOf(marginPaymasterAddress), 1e2);
     }
 
     /*//////////////////////////////////////////////////////////////
