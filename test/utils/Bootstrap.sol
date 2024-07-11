@@ -21,10 +21,12 @@ contract Bootstrap is Test {
     EntryPoint internal entryPoint;
     AccountFactory internal accountFactory;
     MockAccount internal account;
+    uint256 backEndPk = 0x123;
     uint256 userPk = 0x1234;
     uint256 bundlerPk = 0x12345;
-    address payable user = payable(vm.addr(0x1234));
-    address payable bundler = payable(vm.addr(0x12345));
+    address payable internal backEnd = payable(vm.addr(0x123));
+    address payable internal user = payable(vm.addr(0x1234));
+    address payable internal bundler = payable(vm.addr(0x12345));
     uint256 internal initialPaymasterBalance = 10 ether;
     address internal sender;
     address internal pool;

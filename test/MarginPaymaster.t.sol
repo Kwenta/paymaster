@@ -5,6 +5,7 @@ import {Bootstrap} from "test/utils/Bootstrap.sol";
 import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
 import {AccountFactory, MockAccount} from "src/MockAccount.sol";
 import {MarginPaymaster, IPaymaster} from "src/MarginPaymaster.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {console} from "forge-std/console.sol";
 
 contract MarginPaymasterTest is Bootstrap {
@@ -76,6 +77,13 @@ contract MarginPaymasterTest is Bootstrap {
             paymasterAndData: abi.encodePacked(address(marginPaymaster)),
             signature: signature
         });
+
+
+        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
+        signature = bytes.concat(r, s, bytes1(v));
+        userOp.signature = signature;
     }
 
     /*//////////////////////////////////////////////////////////////

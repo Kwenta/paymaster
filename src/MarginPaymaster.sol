@@ -13,6 +13,7 @@ import {IUniswapV3Pool} from "src/interfaces/external/IUniswapV3Pool.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {INftModule} from "src/interfaces/external/INftModule.sol";
 import {MockAccount} from "src/MockAccount.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -83,7 +84,7 @@ contract MarginPaymaster is IPaymaster, Zap {
 
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
-        bytes32,
+        bytes32 userOpHash,
         uint256 maxCostInWei
     )
         external
@@ -91,7 +92,13 @@ contract MarginPaymaster is IPaymaster, Zap {
         onlyEntryPoint
         returns (bytes memory context, uint256 validationData)
     {
+        address recovered = ECDSA.recover(
+            ECDSA.toEthSignedMessageHash(userOpHash),
+            userOp.signature
+        );
+
         address sender = userOp.sender;
+        // validationData = owner == recovered ? 0 : 1
         validationData = 0; // 0 means accept sponsorship, 1 means reject
         context = abi.encode(sender); // passed to the postOp method
     }
