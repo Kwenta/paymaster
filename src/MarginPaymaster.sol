@@ -17,8 +17,6 @@ import {MockAccount} from "src/MockAccount.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
-import {console} from "forge-std/console.sol";
-
 /// @title Kwenta Paymaster Contract
 /// @notice Responsible for paying tx gas fees using trader margin
 /// @author tommyrharper (zeroknowledgeltd@gmail.com)
