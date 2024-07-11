@@ -136,6 +136,7 @@ contract MarginPaymaster is IPaymaster, Zap {
 
         console.log("actualGasCostInWei", actualGasCostInWei); // 43350920000000 = 0.00004335092 ETH = 0.13 USD
 
+        // TODO: remove these steps
         // swap USDC for WETH
         uint256 amountOut = swapUSDCForWETH(USDCToSwapForWETH);
         // unwrap WETH to ETH
@@ -151,6 +152,8 @@ contract MarginPaymaster is IPaymaster, Zap {
     function getCostOfGasInUSDC(
         uint256 gasCostInWei
     ) internal view returns (uint256) {
+        // TODO: use arithmeticMeanTick
+        // (int24 arithmeticMeanTick, ) = OracleLibrary.consult(pool, secondsAgo);
         (, int24 tick, , , , , ) = pool.slot0();
         return
             (OracleLibrary.getQuoteAtTick(
