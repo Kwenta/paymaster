@@ -90,6 +90,10 @@ contract MarginPaymasterTest is Bootstrap {
                                  TESTS
     //////////////////////////////////////////////////////////////*/
 
+    function testOwner() public {
+        assertEq(marginPaymaster.owner(), address(this));
+    }
+
     function testAccountDeployed() public {
         ops.push(userOp);
 
