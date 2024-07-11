@@ -194,6 +194,20 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         entryPoint.withdrawTo(withdrawAddress, withdrawAmount);
     }
 
+    function withdrawETH(
+        address payable withdrawAddress,
+        uint256 amount
+    ) external onlyOwner {
+        withdrawAddress.call{value: amount}("");
+    }
+
+    function withdrawUSDC(
+        address withdrawAddress,
+        uint256 amount
+    ) external onlyOwner {
+        _USDC.transfer(withdrawAddress, amount);
+    }
+
     /*//////////////////////////////////////////////////////////////
                                 HELPERS
     //////////////////////////////////////////////////////////////*/

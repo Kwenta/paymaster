@@ -290,6 +290,53 @@ contract MarginPaymasterTest is Bootstrap {
         marginPaymaster.withdrawTo(withdrawAddress, depositAmount);
     }
 
+    function testWithdrawETH() public {
+        uint256 depositAmount = 1e18; // 1 ETH
+        address payable withdrawAddress = payable(address(0x321));
+
+        vm.deal(marginPaymasterAddress, depositAmount);
+
+        // Withdraw ETH from the contract
+        marginPaymaster.withdrawETH(withdrawAddress, depositAmount);
+
+        // Check if the funds were transferred to the withdrawAddress
+        uint256 withdrawAddressBalance = withdrawAddress.balance;
+        assertEq(withdrawAddressBalance, depositAmount);
+    }
+
+    function testWithdrawETH_onlyOwner() public {
+        uint256 depositAmount = 1e18; // 1 ETH
+        address payable withdrawAddress = payable(address(0x321));
+        // Attempt to withdraw ETH as a non-owner
+        vm.prank(withdrawAddress); // some non-owner address
+        vm.expectRevert("Ownable: caller is not the owner");
+        marginPaymaster.withdrawETH(withdrawAddress, depositAmount);
+    }
+
+    function testWithdrawUSDC() public {
+        uint256 depositAmount = 1000 * 1e6; // 1000 USDC
+        address withdrawAddress = address(0x321);
+
+        // Mint USDC to the contract
+        mintUSDC(address(marginPaymaster), depositAmount);
+
+        // Withdraw USDC from the contract
+        marginPaymaster.withdrawUSDC(withdrawAddress, depositAmount);
+
+        // Check if the funds were transferred to the withdrawAddress
+        uint256 withdrawAddressBalance = usdc.balanceOf(withdrawAddress);
+        assertEq(withdrawAddressBalance, depositAmount);
+    }
+
+    function testWithdrawUSDC_onlyOwner() public {
+        uint256 depositAmount = 1000 * 1e6; // 1000 USDC
+        address withdrawAddress = address(0x321);
+        // Attempt to withdraw USDC as a non-owner
+        vm.prank(withdrawAddress); // some non-owner address
+        vm.expectRevert("Ownable: caller is not the owner");
+        marginPaymaster.withdrawUSDC(withdrawAddress, depositAmount);
+    }
+
     /*//////////////////////////////////////////////////////////////
                              USER OP TESTS
     //////////////////////////////////////////////////////////////*/
