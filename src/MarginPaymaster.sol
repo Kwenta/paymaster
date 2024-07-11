@@ -134,6 +134,8 @@ contract MarginPaymaster is IPaymaster, Zap {
         uint256 accountBalance = snxV3AccountsModule.balanceOf(sender);
         if (accountBalance > 0) {
             uint128 accountId = getWalletAccountId(sender);
+            // TODO: check if admin rights are provided to withdraw from margin
+            // TODO: if not, then check if the userOp is to grantPermission for paymaster
             // uint256 marginOfSender =
         }
 
