@@ -39,6 +39,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     bytes32 public constant PERPS_MODIFY_COLLATERAL_PERMISSION =
         "PERPS_MODIFY_COLLATERAL";
     uint32 public constant TWAP_PERIOD = 300; // 5 minutes
+    uint256 public constant MAX_POST_OP_GAS_USEAGE = 515655; // As last calculated
 
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -117,7 +118,11 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         );
         bool isAuthorized = authorizers[recovered];
         validationData = isAuthorized ? 0 : 1;
-        context = abi.encode(userOp.sender); // passed to the postOp method
+        context = abi.encode(
+            userOp.sender,
+            userOp.maxFeePerGas,
+            userOp.maxPriorityFeePerGas
+        ); // passed to the postOp method
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -131,8 +136,21 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         bytes calldata context,
         uint256 actualGasCostInWei
     ) external onlyEntryPoint {
-        uint256 costOfGasInUSDC = getCostOfGasInUSDC(actualGasCostInWei); // TODO: account for gas costs of postOp func
-        address sender = abi.decode(context, (address));
+        (
+            address sender,
+            uint256 maxFeePerGas,
+            uint256 maxPriorityFeePerGas
+        ) = abi.decode(context, (address, uint256, uint256));
+
+        uint256 gasPrice = getUserOpGasPrice(
+            maxFeePerGas,
+            maxPriorityFeePerGas
+        );
+        uint256 postOpCostInWei = MAX_POST_OP_GAS_USEAGE * gasPrice;
+        uint256 costOfGasInUSDC = getCostOfGasInUSDC(
+            actualGasCostInWei + postOpCostInWei
+        );
+
         (uint256 availableUSDCInWallet, , ) = getUSDCAvailableInWallet(sender);
 
         // draw funds from wallet before accessing margin
@@ -221,6 +239,20 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                                 HELPERS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice copied from the EntryPoint contract
+    function getUserOpGasPrice(
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas
+    ) internal view returns (uint256) {
+        unchecked {
+            if (maxFeePerGas == maxPriorityFeePerGas) {
+                //legacy mode (for networks that don't support basefee opcode)
+                return maxFeePerGas;
+            }
+            return min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+        }
+    }
+
     function getCostOfGasInUSDC(
         uint256 gasCostInWei
     ) internal view returns (uint256) {
@@ -270,10 +302,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         if (withdrawableMargin < 0) return 0;
         uint256 withdrawableMarginUint = uint256(withdrawableMargin);
 
-        uint256 amountToPullFromMargin = sUSDToWithdrawFromMargin <=
+        uint256 amountToPullFromMargin = min(
+            sUSDToWithdrawFromMargin,
             withdrawableMarginUint
-            ? sUSDToWithdrawFromMargin
-            : withdrawableMarginUint;
+        );
 
         // pull sUSD from margin
         perpsMarketSNXV3.modifyCollateral(
@@ -311,7 +343,11 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     {
         balance = _USDC.balanceOf(wallet);
         allowance = IERC20(address(_USDC)).allowance(wallet, address(this));
-        availableUSDC = allowance < balance ? allowance : balance;
+        availableUSDC = min(balance, allowance);
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 
     receive() external payable {}
