@@ -101,6 +101,9 @@ contract Bootstrap is Test {
 
         marginPaymasterAddress = _marginPaymasterAddress;
         marginPaymaster = MarginPaymaster(marginPaymasterAddress);
+
+        vm.prank(address(bootstrap));
+        marginPaymaster.transferOwnership(address(this));
     }
 
     // function initializeOptimismGoerli() internal {
