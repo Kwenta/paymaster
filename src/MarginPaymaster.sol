@@ -34,7 +34,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     bytes32 public constant PERPS_MODIFY_COLLATERAL_PERMISSION =
         "PERPS_MODIFY_COLLATERAL";
     uint32 public constant TWAP_PERIOD = 300; // 5 minutes
-    uint256 public constant MAX_POST_OP_GAS_USEAGE = 515655; // As last calculated
+    uint256 public constant MAX_POST_OP_GAS_USEAGE = 515704; // As last calculated
 
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -125,10 +125,19 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     /// @notice attempt to pull funds from user's wallet, if insufficient, pull from margin
     /// @notice if insufficient margin, pull whatever is available
     function postOp(
-        PostOpMode,
+        PostOpMode mode,
         bytes calldata context,
         uint256 actualGasCostInWei
     ) external onlyEntryPoint {
+        /// @dev: if the mode is postOpReverted, this means the entry point contract already attempted
+        /// to execute this postOp function and it reverted. This is the second call to postOp
+        /// In this scenario we do not want to attempt to pull funds from the user's wallet
+        /// Because clearly this caused a reversion in the last attempt. If we revert again, then the paymaster
+        /// will be treated as DOSing the system and will be blacklisted by bundlers. Hence in this scenario
+        /// we just return early, allowing the paymaster to subsidize the gas cost. It is worth noting that
+        /// this scenario should never occur, but the check remains just in case.
+        if (mode == PostOpMode.postOpReverted) return;
+
         (
             address sender,
             uint256 maxFeePerGas,
