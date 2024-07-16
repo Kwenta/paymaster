@@ -15,6 +15,10 @@ An ERC-4337 compliant custom Paymaster contract (`MarginPaymaster`) which sponso
 
 The `MarginPaymaster` will attempt to recoup gas costs in USDC from a users smart wallet account and failing that their SNX-V3 margin.
 
+You can see here a visual outlining the full ERC-4337 flow with our MarginPaymaster:
+
+![](images/diagram.png)
+
 ## Contracts
 
 > `tree src/`
