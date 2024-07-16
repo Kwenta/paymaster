@@ -98,6 +98,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         authorizers[authorizer] = status;
     }
 
+    /// @custom:auditor // please check carefully over this function (make sure no replay attacks possible etc.)
     /// @notice return the hash we're going to sign off-chain (and validate on-chain)
     /// @notice this method is called by the off-chain service, to sign the request.
     /// @notice it is called on-chain from the validatePaymasterUserOp, to validate the signature.
@@ -171,6 +172,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                                 POST OP
     //////////////////////////////////////////////////////////////*/
 
+    /// @custom:auditor // please check carefully over this function, this is where most of the custom logic is
     /// @notice attempt to pull funds from user's wallet, if insufficient, pull from margin
     /// @notice if insufficient margin, pull whatever is available
     function postOp(
@@ -337,6 +339,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             );
     }
 
+    /// @custom:auditor // please check PARTICULARLY carefully over this function, this is the most specific logic to us
+    /// @custom:auditor // because we are pulling form SNXv3 margin (no one else is doing this in paymasters as far as we know)
+    /// @custom:auditor // this function should NEVER revert, see if you can find a way to make it revert
     /// @notice withdraws sUSD from margin account
     /// @notice if insufficent margin, pulls out whatever is available
     function withdrawFromMargin(
