@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: KGSL: Kwenta General Source License
 pragma solidity 0.8.20;
 
 import {EntryPoint} from "@account-abstraction/contracts/core/EntryPoint.sol";
