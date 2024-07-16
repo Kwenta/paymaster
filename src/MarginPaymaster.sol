@@ -39,6 +39,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     uint256 public constant DEFAULT_WALLET_INDEX = 0;
     uint256 public constant SIGNATURE_BYTES_OFFSET = 20;
     uint256 public constant ACCOUNT_ID_OFFSET = 85;
+    uint256 public constant USDC_TO_SUSDC_DECIMALS_INCREASE = 1e12;
 
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -224,7 +225,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             }
 
             uint256 sUSDToWithdrawFromMargin = (costOfGasInUSDC -
-                availableUSDCInWallet) * 1e12;
+                availableUSDCInWallet) * USDC_TO_SUSDC_DECIMALS_INCREASE;
             uint256 withdrawn = withdrawFromMargin(
                 sender,
                 sUSDToWithdrawFromMargin,
