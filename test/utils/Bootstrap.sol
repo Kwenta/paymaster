@@ -8,7 +8,7 @@ import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, BaseParam
 import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 import {IV3SwapRouter} from "src/interfaces/external/IV3SwapRouter.sol";
 import {IWETH9} from "src/interfaces/external/IWETH9.sol";
-import {AccountFactory, MockAccount} from "src/MockAccount.sol";
+import {AccountFactory, MockAccount} from "test/utils/MockAccount.sol";
 import {IUSDC} from "test/utils/interfaces/IUSDC.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
 import {console} from "lib/forge-std/src/console.sol";

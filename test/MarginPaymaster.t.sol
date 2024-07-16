@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import {Bootstrap} from "test/utils/Bootstrap.sol";
 import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
-import {AccountFactory, MockAccount} from "src/MockAccount.sol";
+import {AccountFactory, MockAccount} from "test/utils/MockAccount.sol";
 import {MarginPaymaster, IPaymaster} from "src/MarginPaymaster.sol";
 import {IStakeManager} from "lib/account-abstraction/contracts/interfaces/IStakeManager.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
