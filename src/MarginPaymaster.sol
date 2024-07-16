@@ -38,6 +38,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     uint256 public constant IS_NOT_AUTHORIZED = 1;
     uint256 public constant DEFAULT_WALLET_INDEX = 0;
     uint256 public constant SIGNATURE_BYTES_OFFSET = 20;
+    uint256 public constant ACCOUNT_ID_OFFSET = 85;
 
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -141,14 +142,16 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         bytes32 customUserOpHash = getHash(userOp);
         address recovered = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(customUserOpHash),
-            userOp.paymasterAndData[SIGNATURE_BYTES_OFFSET:]
+            userOp.paymasterAndData[SIGNATURE_BYTES_OFFSET:ACCOUNT_ID_OFFSET]
         );
         bool isAuthorized = authorizers[recovered];
         validationData = isAuthorized ? IS_AUTHORIZED : IS_NOT_AUTHORIZED;
+        bytes memory accountId = userOp.paymasterAndData[ACCOUNT_ID_OFFSET:];
         context = abi.encode(
             userOp.sender,
             userOp.maxFeePerGas,
-            userOp.maxPriorityFeePerGas
+            userOp.maxPriorityFeePerGas,
+            uint128(bytes16(accountId)) // optional: if this is blank we will tkae the first account on-chain, this is added to support users with multiple SNX V3 accounts
         ); // passed to the postOp method
     }
 
@@ -175,8 +178,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         (
             address sender,
             uint256 maxFeePerGas,
-            uint256 maxPriorityFeePerGas
-        ) = abi.decode(context, (address, uint256, uint256));
+            uint256 maxPriorityFeePerGas,
+            uint128 accountId
+        ) = abi.decode(context, (address, uint256, uint256, uint128));
 
         uint256 gasPrice = getUserOpGasPrice(
             maxFeePerGas,
@@ -207,7 +211,8 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                 availableUSDCInWallet) * 1e12;
             uint256 withdrawn = withdrawFromMargin(
                 sender,
-                sUSDToWithdrawFromMargin
+                sUSDToWithdrawFromMargin,
+                accountId
             );
             if (withdrawn > 0) {
                 // zap sUSD into USDC
@@ -309,7 +314,8 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         address wallet
     ) internal view returns (uint128) {
         /// @dev: note, this impl assumes the user has only one account
-        /// @dev: further development efforts would be required to support multiple accounts
+        /// @dev: if you want to support multiple accounts, append the accountId
+        /// @dev: field to the end of the userOp.paymasterAndData
         return
             uint128(
                 snxV3AccountsModule.tokenOfOwnerByIndex(
@@ -323,12 +329,27 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     /// @notice if insufficent margin, pulls out whatever is available
     function withdrawFromMargin(
         address sender,
-        uint256 sUSDToWithdrawFromMargin
+        uint256 sUSDToWithdrawFromMargin,
+        uint128 accountId
     ) internal returns (uint256) {
-        uint256 accountBalance = snxV3AccountsModule.balanceOf(sender);
-        if (accountBalance == 0) return 0;
+        if (accountId != 0) {
+            // check if the account Id is valid
+            try snxV3AccountsModule.ownerOf(accountId) returns (address owner) {
+                // only allow the owners accounts to subsidise gas
+                if (owner != sender) return 0;
+            } catch {
+                // set accountId to zero, and then check if the sender has an account on-chain
+                accountId = 0;
+            }
+        }
 
-        uint128 accountId = getWalletAccountId(sender);
+        if (accountId == 0) {
+            uint256 accountBalance = snxV3AccountsModule.balanceOf(sender);
+            if (accountBalance == 0) return 0;
+
+            accountId = getWalletAccountId(sender);
+        }
+
         bool isAuthorized = perpsMarketSNXV3.isAuthorized(
             accountId,
             PERPS_MODIFY_COLLATERAL_PERMISSION,

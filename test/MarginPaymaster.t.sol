@@ -67,6 +67,10 @@ contract MarginPaymasterTest is Bootstrap {
 
         uint256 nonce = entryPoint.getNonce(sender, 0);
         bytes memory signature;
+        uint256 totalAccountSupply = snxV3AccountsModule.totalSupply();
+        uint128 expectedAccountId = uint128(snxV3AccountsModule.tokenByIndex(
+            totalAccountSupply - 1
+        ) + 1);
         userOp = UserOperation({
             sender: sender,
             nonce: nonce,
@@ -88,7 +92,11 @@ contract MarginPaymasterTest is Bootstrap {
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
         signature = bytes.concat(r, s, bytes1(v));
-        userOp.paymasterAndData = abi.encodePacked(address(marginPaymaster), signature);
+        userOp.paymasterAndData = abi.encodePacked(
+            address(marginPaymaster),
+            signature,
+            expectedAccountId
+        );
 
         marginPaymaster.setAuthorizer(backEnd, true);
     }

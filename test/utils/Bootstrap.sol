@@ -10,6 +10,7 @@ import {IV3SwapRouter} from "src/interfaces/external/IV3SwapRouter.sol";
 import {IWETH9} from "src/interfaces/external/IWETH9.sol";
 import {AccountFactory, MockAccount} from "test/utils/MockAccount.sol";
 import {IUSDC} from "test/utils/interfaces/IUSDC.sol";
+import {INftModule} from "src/interfaces/external/INftModule.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
 import {console} from "lib/forge-std/src/console.sol";
 
@@ -49,6 +50,7 @@ contract Bootstrap is Test {
     uint128 internal sUSDCId;
     IV3SwapRouter internal uniV3Router;
     IWETH9 internal weth;
+    INftModule internal snxV3AccountsModule;
 
     function initializeLocal() internal {
         entryPoint = new EntryPoint();
@@ -103,6 +105,10 @@ contract Bootstrap is Test {
 
         vm.prank(address(bootstrap));
         marginPaymaster.transferOwnership(address(this));
+
+        snxV3AccountsModule = INftModule(
+            perpsMarketProxy.getAccountTokenAddress()
+        );
     }
 
     // function initializeOptimismGoerli() internal {
