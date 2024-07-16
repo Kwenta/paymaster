@@ -34,6 +34,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         "PERPS_MODIFY_COLLATERAL";
     uint32 public constant TWAP_PERIOD = 300; // 5 minutes
     uint256 public constant MAX_POST_OP_GAS_USEAGE = 515704; // As last calculated
+    uint256 public constant IS_AUTHORIZED = 0;
+    uint256 public constant IS_NOT_AUTHORIZED = 1;
+    uint256 public constant DEFAULT_WALLET_INDEX = 0;
 
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -109,7 +112,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             userOp.signature
         );
         bool isAuthorized = authorizers[recovered];
-        validationData = isAuthorized ? 0 : 1;
+        validationData = isAuthorized ? IS_AUTHORIZED : IS_NOT_AUTHORIZED;
         context = abi.encode(
             userOp.sender,
             userOp.maxFeePerGas,
@@ -275,7 +278,13 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     ) internal view returns (uint128) {
         /// @dev: note, this impl assumes the user has only one account
         /// @dev: further development efforts would be required to support multiple accounts
-        return uint128(snxV3AccountsModule.tokenOfOwnerByIndex(wallet, 0));
+        return
+            uint128(
+                snxV3AccountsModule.tokenOfOwnerByIndex(
+                    wallet,
+                    DEFAULT_WALLET_INDEX
+                )
+            );
     }
 
     /// @notice withdraws sUSD from margin account
