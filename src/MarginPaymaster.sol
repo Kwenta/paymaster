@@ -165,6 +165,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             userOp.sender,
             userOp.maxFeePerGas,
             userOp.maxPriorityFeePerGas,
+            /// @custom:auditor // watch out, i hacked out this accountId logic at the last minute, could have made a mistake
             // the accountId field is optional, if it is not present we will take the first account appearing on-chain
             // if the accountId is invalid, we will again attempt to take the first account appearing on-chain
             // if it is set correctly, then margin will be pulled from specified accountId. This allows support for users with multiple snxv3 accounts
