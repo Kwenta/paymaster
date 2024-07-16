@@ -1,4 +1,4 @@
-# foundry-scaffold
+# Margin Paymaster
 
 [![Github Actions][gha-badge]][gha] 
 [![Foundry][foundry-badge]][foundry] 
@@ -11,26 +11,29 @@
 [license]: https://opensource.org/license/GPL-3.0/
 [license-badge]: https://img.shields.io/badge/GitHub-GPL--3.0-informational
 
-Template foundry project created by Kwenta
+An ERC-4337 compliant custom Paymaster contract (`MarginPaymaster`) which sponsors optimistically sponsors transactions signed by a privileged actor, the `authorizer`.
 
-## Getting Started
-
-1. Create an `.env` file using the `.env.example` file as a template
-2. Update `package.json` with your project name, description, etc.
-3. Update the `README.md` with your project name, description, etc.
-4. Add required **Repository Secrets** to your github repository settings
-> Navigate to `Settings > Secrets and variables > Actions` and add whatever secrets are required for your project's CI.
-5. The current template CI will fail until the following repository secrets are added: `OPTIMISM_GOERLI_RPC_URL` and `ETHERSCAN_API_KEY`. See `.github/workflows/*` for more details.
-6. Finally, run `npm run coverage:generate-lcov` to generate a coverage report for your project and commit the results to your remote repository
-> This will be used by the CI to determine when changes to your project have caused the coverage to drop below a certain threshold.
+The `MarginPaymaster` will attempt to recoup gas costs in USDC from a users smart wallet account and failing that their SNX-V3 margin.
 
 ## Contracts
 
 > `tree src/`
 
 ```
-src/
-└── Counter.sol
+src
+├── MarginPaymaster.sol
+├── interfaces
+│   └── external
+│       ├── IEngine.sol
+│       ├── INftModule.sol
+│       ├── IPerpsMarketProxy.sol
+│       ├── IUniswapV3Pool.sol
+│       ├── IV3SwapRouter.sol
+│       └── IWETH9.sol
+└── libraries
+    ├── FullMath.sol
+    ├── OracleLibrary.sol
+    └── TickMath.sol
 ```
 
 ## Tests
@@ -43,17 +46,18 @@ src/
 npm run compile
 ```
 
-3. Execute tests (requires rpc url(s) to be set in `.env`)
+3. Create an `.env` file using the `.env.example` file as a template
+
+4. Execute tests (requires rpc url(s) to be set in `.env`)
 
 ```
 npm run test
 ```
 
 4. Run specific test
-    > `OPTIMISM_GOERLI_RPC_URL` can be replaced with `OPTIMISM_RPC_URL` if a mainnet fork is desired
 
 ```
-forge test --fork-url $(grep OPTIMISM_GOERLI_RPC_URL .env | cut -d '=' -f2) --match-test TEST_NAME -vvv
+forge test -vv --fork-url $(grep BASE_URL .env | cut -d '=' -f2) --mt TEST_NAME
 ```
 
 ## Deployment Addresses
