@@ -136,6 +136,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             );
     }
 
+    /// @inheritdoc IPaymaster
     /// @notice We rely entirely on the back-end to decide which transactions should be sponsored
     /// @notice if the user has USDC available in their wallet or margin, we will use that
     /// @notice if they do not, the paymaster will pay
@@ -173,6 +174,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     /// @custom:auditor // please check carefully over this function, this is where most of the custom logic is
+    /// @inheritdoc IPaymaster
     /// @notice attempt to pull funds from user's wallet, if insufficient, pull from margin
     /// @notice if insufficient margin, pull whatever is available
     function postOp(
@@ -344,6 +346,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     /// @custom:auditor // this function should NEVER revert, see if you can find a way to make it revert
     /// @notice withdraws sUSD from margin account
     /// @notice if insufficent margin, pulls out whatever is available
+    /// @param sender the address of the users smart wallet
+    /// @param sUSDToWithdrawFromMargin the amount of sUSD to withdraw from margin
+    /// @param accountId the account Id of the user, if zero, we will attempt to find the actual ID onchain
     function withdrawFromMargin(
         address sender,
         uint256 sUSDToWithdrawFromMargin,
