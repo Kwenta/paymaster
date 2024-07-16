@@ -107,6 +107,12 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
         bytes memory paymasterAddress = userOp
             .paymasterAndData[:SIGNATURE_BYTES_OFFSET];
+        uint128 accountId;
+        if (userOp.paymasterAndData.length > ACCOUNT_ID_OFFSET) {
+            accountId = uint128(
+                bytes16(userOp.paymasterAndData[ACCOUNT_ID_OFFSET:])
+            );
+        }
         return
             keccak256(
                 abi.encode(
@@ -120,6 +126,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                     userOp.maxFeePerGas,
                     userOp.maxPriorityFeePerGas,
                     uint256(bytes32(paymasterAddress)),
+                    accountId,
                     block.chainid,
                     address(this)
                 )
@@ -151,7 +158,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             userOp.sender,
             userOp.maxFeePerGas,
             userOp.maxPriorityFeePerGas,
-            uint128(bytes16(accountId)) // optional: if this is blank we will tkae the first account on-chain, this is added to support users with multiple SNX V3 accounts
+            // the accountId field is optional, if it is not present we will take the first account appearing on-chain
+            // if the accountId is invalid, we will attempt to take the first account appearing on-chain
+            // if it is set correctly, then margin will be pulled from specified accountId. This allows support for users with multiple snxv3 accounts
+            uint128(bytes16(accountId))
         ); // passed to the postOp method
     }
 
