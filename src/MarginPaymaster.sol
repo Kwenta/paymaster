@@ -37,6 +37,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     uint256 public constant IS_AUTHORIZED = 0;
     uint256 public constant IS_NOT_AUTHORIZED = 1;
     uint256 public constant DEFAULT_WALLET_INDEX = 0;
+    uint256 public constant SIGNATURE_BYTES_OFFSET = 20;
 
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -103,7 +104,8 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         UserOperation calldata userOp
     ) public view returns (bytes32) {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
-        bytes memory paymasterAddress = userOp.paymasterAndData[:20];
+        bytes memory paymasterAddress = userOp
+            .paymasterAndData[:SIGNATURE_BYTES_OFFSET];
         return
             keccak256(
                 abi.encode(
@@ -139,7 +141,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         bytes32 customUserOpHash = getHash(userOp);
         address recovered = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(customUserOpHash),
-            userOp.paymasterAndData[20:]
+            userOp.paymasterAndData[SIGNATURE_BYTES_OFFSET:]
         );
         bool isAuthorized = authorizers[recovered];
         validationData = isAuthorized ? IS_AUTHORIZED : IS_NOT_AUTHORIZED;
