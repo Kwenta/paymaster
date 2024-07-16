@@ -44,6 +44,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                                  STATE
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice authorizers are able to sign off-chain requests to use the paymaster
     mapping(address => bool) public authorizers;
     uint256 public percentageMarkup = 120; // 20% markup on gas costs
 
@@ -92,6 +93,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                                VALIDATION
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice set the authorizer status
     function setAuthorizer(address authorizer, bool status) external onlyOwner {
         authorizers[authorizer] = status;
     }
