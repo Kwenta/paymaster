@@ -37,9 +37,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     uint256 public constant IS_AUTHORIZED = 0;
     uint256 public constant IS_NOT_AUTHORIZED = 1;
     uint256 public constant DEFAULT_WALLET_INDEX = 0;
-    uint256 public constant SIGNATURE_BYTES_OFFSET = 20;
-    uint256 public constant ACCOUNT_ID_OFFSET = 85;
     uint256 public constant USDC_TO_SUSDC_DECIMALS_INCREASE = 1e12;
+    uint256 public constant SIGNATURE_BYTES_OFFSET = 20;
+    uint256 public constant ACCOUNT_ID_BYTES_OFFSET = 85;
 
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -112,9 +112,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         bytes memory paymasterAddress = userOp
             .paymasterAndData[:SIGNATURE_BYTES_OFFSET];
         uint128 accountId;
-        if (userOp.paymasterAndData.length > ACCOUNT_ID_OFFSET) {
+        if (userOp.paymasterAndData.length > ACCOUNT_ID_BYTES_OFFSET) {
             accountId = uint128(
-                bytes16(userOp.paymasterAndData[ACCOUNT_ID_OFFSET:])
+                bytes16(userOp.paymasterAndData[ACCOUNT_ID_BYTES_OFFSET:])
             );
         }
         return
@@ -154,11 +154,13 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         bytes32 customUserOpHash = getHash(userOp);
         address recovered = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(customUserOpHash),
-            userOp.paymasterAndData[SIGNATURE_BYTES_OFFSET:ACCOUNT_ID_OFFSET]
+            userOp
+                .paymasterAndData[SIGNATURE_BYTES_OFFSET:ACCOUNT_ID_BYTES_OFFSET]
         );
         bool isAuthorized = authorizers[recovered];
         validationData = isAuthorized ? IS_AUTHORIZED : IS_NOT_AUTHORIZED;
-        bytes memory accountId = userOp.paymasterAndData[ACCOUNT_ID_OFFSET:];
+        bytes memory accountId = userOp
+            .paymasterAndData[ACCOUNT_ID_BYTES_OFFSET:];
         context = abi.encode(
             userOp.sender,
             userOp.maxFeePerGas,
@@ -355,6 +357,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         uint256 sUSDToWithdrawFromMargin,
         uint128 accountId
     ) internal returns (uint256) {
+        /// @custom:auditor // watch out for this accountId logic, i hacked it out quickly at the last minute
+        /// @custom:auditor // previously it didn't support the BE defining an accountId in paymasterAndData
+        /// @custom:auditor // it always just checked the first account on-chain, so take a closer look at this
         if (accountId != 0) {
             // check if the account Id is valid
             try snxV3AccountsModule.ownerOf(accountId) returns (address owner) {
