@@ -84,11 +84,11 @@ contract MarginPaymasterTest is Bootstrap {
             signature: signature
         });
 
-        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        bytes32 userOpHash = marginPaymaster.getHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
         signature = bytes.concat(r, s, bytes1(v));
-        userOp.signature = signature;
+        userOp.paymasterAndData = abi.encodePacked(address(marginPaymaster), signature);
 
         marginPaymaster.setAuthorizer(backEnd, true);
     }
@@ -461,10 +461,13 @@ contract MarginPaymasterTest is Bootstrap {
             0,
             approvalCalldata
         );
-        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        bytes32 userOpHash = marginPaymaster.getHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
-        userOp.signature = bytes.concat(r, s, bytes1(v));
+        userOp.paymasterAndData = abi.encodePacked(
+            address(marginPaymaster),
+            bytes.concat(r, s, bytes1(v))
+        );
 
         ops.push(userOp);
 
@@ -491,10 +494,13 @@ contract MarginPaymasterTest is Bootstrap {
             0,
             approvalCalldata
         );
-        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        bytes32 userOpHash = marginPaymaster.getHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
-        userOp.signature = bytes.concat(r, s, bytes1(v));
+        userOp.paymasterAndData = abi.encodePacked(
+            address(marginPaymaster),
+            bytes.concat(r, s, bytes1(v))
+        );
 
         ops.push(userOp);
 
@@ -540,10 +546,13 @@ contract MarginPaymasterTest is Bootstrap {
             0,
             newcalldata
         );
-        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        bytes32 userOpHash = marginPaymaster.getHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
-        userOp.signature = bytes.concat(r, s, bytes1(v));
+        userOp.paymasterAndData = abi.encodePacked(
+            address(marginPaymaster),
+            bytes.concat(r, s, bytes1(v))
+        );
         ops.push(userOp);
 
         uint256 balanceOfPaymasterBefore = usdc.balanceOf(
@@ -570,10 +579,13 @@ contract MarginPaymasterTest is Bootstrap {
             MockAccount.setupAccount.selector,
             1e2
         );
-        bytes32 userOpHash = entryPoint.getUserOpHash(userOp);
+        bytes32 userOpHash = marginPaymaster.getHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
-        userOp.signature = bytes.concat(r, s, bytes1(v));
+        userOp.paymasterAndData = abi.encodePacked(
+            address(marginPaymaster),
+            bytes.concat(r, s, bytes1(v))
+        );
 
         ops.push(userOp);
 

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: KGSL: Kwenta General Source License
+// Licence - KGSL: Kwenta General Source License
 pragma solidity 0.8.20;
 
 import {EntryPoint} from "@account-abstraction/contracts/core/EntryPoint.sol";
@@ -94,12 +94,41 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         authorizers[authorizer] = status;
     }
 
+    /// @notice return the hash we're going to sign off-chain (and validate on-chain)
+    /// @notice this method is called by the off-chain service, to sign the request.
+    /// @notice it is called on-chain from the validatePaymasterUserOp, to validate the signature.
+    /// @notice note that this signature covers all fields of the UserOperation, except the "paymasterAndData",
+    /// @notice which will carry the signature itself.
+    function getHash(
+        UserOperation calldata userOp
+    ) public view returns (bytes32) {
+        //can't use userOp.hash(), since it contains also the paymasterAndData itself.
+        bytes memory paymasterAddress = userOp.paymasterAndData[:20];
+        return
+            keccak256(
+                abi.encode(
+                    userOp.sender,
+                    userOp.nonce,
+                    keccak256(userOp.initCode),
+                    keccak256(userOp.callData),
+                    userOp.callGasLimit,
+                    userOp.verificationGasLimit,
+                    userOp.preVerificationGas,
+                    userOp.maxFeePerGas,
+                    userOp.maxPriorityFeePerGas,
+                    uint256(bytes32(paymasterAddress)),
+                    block.chainid,
+                    address(this)
+                )
+            );
+    }
+
     /// @notice We rely entirely on the back-end to decide which transactions should be sponsored
     /// @notice if the user has USDC available in their wallet or margin, we will use that
     /// @notice if they do not, the paymaster will pay
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
-        bytes32 userOpHash,
+        bytes32,
         uint256
     )
         external
@@ -107,9 +136,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         onlyEntryPoint
         returns (bytes memory context, uint256 validationData)
     {
+        bytes32 customUserOpHash = getHash(userOp);
         address recovered = ECDSA.recover(
-            ECDSA.toEthSignedMessageHash(userOpHash),
-            userOp.signature
+            ECDSA.toEthSignedMessageHash(customUserOpHash),
+            userOp.paymasterAndData[20:]
         );
         bool isAuthorized = authorizers[recovered];
         validationData = isAuthorized ? IS_AUTHORIZED : IS_NOT_AUTHORIZED;
