@@ -439,6 +439,53 @@ contract MarginPaymasterTest is Bootstrap {
         assertLt(colAmount, 5 ether);
     }
 
+    function testInvalidAccountId() public {
+        uint256 totalAccountSupply = snxV3AccountsModule.totalSupply();
+        uint128 wrongAccountId = uint128(
+            snxV3AccountsModule.tokenByIndex(totalAccountSupply - 1) + 2
+        );
+        userOp.paymasterAndData = abi.encodePacked(
+            address(marginPaymaster),
+            new bytes(65),
+            wrongAccountId
+        );
+        bytes32 userOpHash = marginPaymaster.getHash(userOp);
+        bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
+        userOp.paymasterAndData = abi.encodePacked(
+            address(marginPaymaster),
+            bytes.concat(r, s, bytes1(v)),
+            wrongAccountId
+        );
+
+        ops.push(userOp);
+
+        mintUSDC(address(this), 1000 * 1e6);
+        usdc.approve(sender, type(uint256).max);
+
+        vm.prank(bundler);
+        entryPoint.handleOps(ops, bundler);
+
+        uint128 accountId = account.accountId();
+        assertGt(accountId, 0);
+        assertTrue(
+            perpsMarketProxy.hasPermission(
+                accountId,
+                ADMIN_PERMISSION,
+                marginPaymasterAddress
+            )
+        );
+        assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
+        assertEq(usdc.balanceOf(sender), 0);
+        assertGt(usdc.balanceOf(marginPaymasterAddress), 0);
+        uint256 colAmount = perpsMarketProxy.getCollateralAmount(
+            accountId,
+            sUSDId
+        );
+        assertGt(colAmount, 4 ether);
+        assertLt(colAmount, 5 ether);
+    }
+
     function testPayFromWalletAndMargin() public {
         ops.push(userOp);
 
