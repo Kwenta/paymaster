@@ -33,7 +33,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     bytes32 public constant PERPS_MODIFY_COLLATERAL_PERMISSION =
         "PERPS_MODIFY_COLLATERAL";
     uint32 public constant TWAP_PERIOD = 300; // 5 minutes
-    uint256 public constant MAX_POST_OP_GAS_USEAGE = 520047; // As last calculated
+    uint256 public constant MAX_POST_OP_GAS_USEAGE = 520072; // As last calculated
     uint256 public constant IS_AUTHORIZED = 0;
     uint256 public constant IS_NOT_AUTHORIZED = 1;
     uint256 public constant DEFAULT_WALLET_INDEX = 0;
@@ -210,6 +210,8 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         uint256 costOfGasInUSDC = getCostOfGasInUSDC(
             actualGasCostInWei + postOpCostInWei
         );
+
+        if (costOfGasInUSDC == 0) return;
 
         (uint256 availableUSDCInWallet, , ) = getUSDCAvailableInWallet(sender);
 
