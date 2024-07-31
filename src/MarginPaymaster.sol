@@ -393,7 +393,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             accountId
         );
 
-        if (withdrawableMargin < 0) return 0;
+        if (withdrawableMargin <= 0) return 0;
         uint256 withdrawableMarginUint = uint256(withdrawableMargin);
 
         uint256 amountToPullFromMargin = min(
