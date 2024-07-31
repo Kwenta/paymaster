@@ -26,23 +26,53 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                                IMMUTABLES
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice EntryPoint contract instance
     EntryPoint public immutable entryPoint;
+    
+    /// @notice Perps Market Proxy contract instance
     IPerpsMarketProxy public immutable perpsMarketSNXV3;
+    
+    /// @notice Uniswap V3 Swap Router contract instance
     IV3SwapRouter public immutable uniV3Router;
+    
+    /// @notice WETH9 contract instance
     IWETH9 public immutable weth;
+    
+    /// @notice Uniswap V3 Pool contract instance
     IUniswapV3Pool public immutable pool;
+    
+    /// @notice sUSD token ID
     uint128 public constant sUSDId = 0;
+    
+    /// @notice SNX V3 Router Proxy Address wrapped in the Accounts Module
     INftModule public immutable snxV3AccountsModule;
-    uint24 constant POOL_FEE = 500; // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
-    bytes32 public constant PERPS_MODIFY_COLLATERAL_PERMISSION =
-        "PERPS_MODIFY_COLLATERAL";
+    
+    /// @notice Uniswap V3 pool fee for USDC/WETH liquidity
+    /// @notice 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
+    uint24 constant POOL_FEE = 500;
+    
+    /// @notice Permission for modifying collateral in snxv3 Perps Market
+    bytes32 public constant PERPS_MODIFY_COLLATERAL_PERMISSION = "PERPS_MODIFY_COLLATERAL";
+    
+    /// @notice Time-weighted average price period in seconds
     uint32 public constant TWAP_PERIOD = 300; // 5 minutes
+    
+    /// @notice Maximum gas usage for post-operation
     uint256 public constant MAX_POST_OP_GAS_USEAGE = 520_072; // As last calculated
+    
+    /// @notice Authorization status: authorized
     uint256 public constant IS_AUTHORIZED = 0;
+    
+    /// @notice Authorization status: not authorized
     uint256 public constant IS_NOT_AUTHORIZED = 1;
+    
+    /// @notice Default wallet index
     uint256 public constant DEFAULT_WALLET_INDEX = 0;
-    uint256 public constant USDC_TO_SUSDC_DECIMALS_INCREASE = 1e12;
+    
+    /// @notice Offset for signature bytes
     uint256 public constant SIGNATURE_BYTES_OFFSET = 20;
+    
+    /// @notice Offset for account ID bytes
     uint256 public constant ACCOUNT_ID_BYTES_OFFSET = 85;
 
     /*//////////////////////////////////////////////////////////////
@@ -231,7 +261,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
 
             uint256 sUSDToWithdrawFromMargin = (
                 costOfGasInUSDC - availableUSDCInWallet
-            ) * USDC_TO_SUSDC_DECIMALS_INCREASE;
+            ) * _DECIMALS_FACTOR;
             uint256 withdrawn =
                 withdrawFromMargin(sender, sUSDToWithdrawFromMargin, accountId);
             if (withdrawn > 0) {
