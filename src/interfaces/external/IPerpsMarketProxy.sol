@@ -16,18 +16,26 @@ interface IPerpsMarketProxy {
         address user
     ) external;
 
-    function getCollateralAmount(
+    function getCollateralAmount(uint128 accountId, uint128 synthMarketId)
+        external
+        view
+        returns (uint256);
+
+    function getAccountTokenAddress()
+        external
+        view
+        returns (address accountNftToken);
+
+    function getWithdrawableMargin(uint128 accountId)
+        external
+        view
+        returns (int256 withdrawableMargin);
+
+    function revokePermission(
         uint128 accountId,
-        uint128 synthMarketId
-    ) external view returns (uint256);
-
-    function getAccountTokenAddress() external view returns (address accountNftToken);
-
-    function getWithdrawableMargin(
-        uint128 accountId
-    ) external view returns (int256 withdrawableMargin);
-
-    function revokePermission(uint128 accountId, bytes32 permission, address user) external;
+        bytes32 permission,
+        address user
+    ) external;
 
     /// @notice Returns the address that owns a given account, as recorded by the system.
     /// @param accountId The account id whose owner is being retrieved.
@@ -140,7 +148,6 @@ interface IPerpsMarketProxy {
         external
         view
         returns (uint256 maxMarketSize);
-
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS

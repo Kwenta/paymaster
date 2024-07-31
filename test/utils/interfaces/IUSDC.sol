@@ -2,10 +2,9 @@
 pragma solidity 0.8.20;
 
 interface IUSDC {
-    function configureMinter(
-        address minter,
-        uint256 minterAllowedAmount
-    ) external returns (bool);
+    function configureMinter(address minter, uint256 minterAllowedAmount)
+        external
+        returns (bool);
 
     function mint(address to, uint256 amount) external returns (bool);
 
@@ -39,11 +38,12 @@ interface IUSDC {
     /// @param amount The amount of tokens to transfer
     /// @return a boolean value indicating whether the operation succeeded.
     /// Emits a {Transfer} event
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (bool);
+    function transferFrom(address from, address to, uint256 amount)
+        external
+        returns (bool);
 
-    function allowance(address owner, address spender) external view returns (uint256);
+    function allowance(address owner, address spender)
+        external
+        view
+        returns (uint256);
 }

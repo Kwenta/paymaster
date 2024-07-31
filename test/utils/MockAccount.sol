@@ -5,10 +5,12 @@ import "@account-abstraction/contracts/core/EntryPoint.sol";
 import "@account-abstraction/contracts/interfaces/IAccount.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
-import {IERC721Receiver} from "lib/openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol";
+import {IERC721Receiver} from
+    "lib/openzeppelin-contracts/contracts/token/ERC721/IERC721Receiver.sol";
 import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 import {IEngine} from "src/interfaces/external/IEngine.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from
+    "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {console} from "forge-std/console.sol";
 
 contract MockAccount is IAccount, IERC721Receiver {
@@ -35,25 +37,16 @@ contract MockAccount is IAccount, IERC721Receiver {
         usdc = IERC20(_usdc);
     }
 
-    function execute(
-        address dest,
-        uint256 value,
-        bytes calldata func
-    ) external {
+    function execute(address dest, uint256 value, bytes calldata func)
+        external
+    {
         _call(dest, value, func);
     }
 
     function _call(address target, uint256 value, bytes memory data) internal {
         assembly ("memory-safe") {
-            let succ := call(
-                gas(),
-                target,
-                value,
-                add(data, 0x20),
-                mload(data),
-                0x00,
-                0
-            )
+            let succ :=
+                call(gas(), target, value, add(data, 0x20), mload(data), 0x00, 0)
 
             if iszero(succ) {
                 let fmp := mload(0x40)
@@ -96,12 +89,11 @@ contract MockAccount is IAccount, IERC721Receiver {
         return 0;
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) external pure returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata)
+        external
+        pure
+        returns (bytes4)
+    {
         return this.onERC721Received.selector;
     }
 }
@@ -131,11 +123,7 @@ contract AccountFactory {
         bytes memory bytecode = abi.encodePacked(
             type(MockAccount).creationCode,
             abi.encode(
-                owner,
-                perpsMarketSNXV3,
-                marginPaymaster,
-                smartMarginV3,
-                usdc
+                owner, perpsMarketSNXV3, marginPaymaster, smartMarginV3, usdc
             )
         );
 
@@ -150,10 +138,10 @@ contract AccountFactory {
         return deploy(salt, bytecode);
     }
 
-    function deploy(
-        bytes32 salt,
-        bytes memory bytecode
-    ) internal returns (address) {
+    function deploy(bytes32 salt, bytes memory bytecode)
+        internal
+        returns (address)
+    {
         address addr;
         require(bytecode.length != 0, "Create2: bytecode length is zero");
         assembly {
