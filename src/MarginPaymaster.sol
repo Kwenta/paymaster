@@ -367,7 +367,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             // check if the account Id is valid
             try snxV3AccountsModule.ownerOf(accountId) returns (address owner) {
                 // only allow the owners accounts to subsidise gas
-                if (owner != sender) return 0;
+                if (owner != sender) accountId = 0;
             } catch {
                 // set accountId to zero, and then check if the sender has an account on-chain
                 accountId = 0;
