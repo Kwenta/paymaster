@@ -37,17 +37,23 @@ interface IERC721 {
     /**
      * @notice Emitted when `tokenId` token is transferred from `from` to `to`.
      */
-    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+    event Transfer(
+        address indexed from, address indexed to, uint256 indexed tokenId
+    );
 
     /**
      * @notice Emitted when `owner` enables `approved` to manage the `tokenId` token.
      */
-    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
+    event Approval(
+        address indexed owner, address indexed approved, uint256 indexed tokenId
+    );
 
     /**
      * @notice Emitted when `owner` enables or disables (`approved`) `operator` to manage all of its assets.
      */
-    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
+    event ApprovalForAll(
+        address indexed owner, address indexed operator, bool approved
+    );
 
     /**
      * @notice Returns the number of tokens in ``owner``'s account.
@@ -56,7 +62,10 @@ interface IERC721 {
      *
      * - `holder` must be a valid address
      */
-    function balanceOf(address holder) external view returns (uint256 balance);
+    function balanceOf(address holder)
+        external
+        view
+        returns (uint256 balance);
 
     /**
      * @notice Returns the owner of the `tokenId` token.
@@ -101,7 +110,8 @@ interface IERC721 {
      *
      * Emits a {Transfer} event.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId) external;
+    function safeTransferFrom(address from, address to, uint256 tokenId)
+        external;
 
     /**
      * @notice Transfers `tokenId` token from `from` to `to`.
@@ -153,14 +163,20 @@ interface IERC721 {
      *
      * - `tokenId` must exist.
      */
-    function getApproved(uint256 tokenId) external view returns (address operator);
+    function getApproved(uint256 tokenId)
+        external
+        view
+        returns (address operator);
 
     /**
      * @notice Returns if the `operator` is allowed to manage all of the assets of `owner`.
      *
      * See {setApprovalForAll}
      */
-    function isApprovedForAll(address owner, address operator) external view returns (bool);
+    function isApprovedForAll(address owner, address operator)
+        external
+        view
+        returns (bool);
 }
 
 /**
@@ -187,7 +203,10 @@ interface IERC721Enumerable is IERC721 {
      * - `owner` must be a valid address
      * - `index` must be less than the balance of the tokens for the owner
      */
-    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
+    function tokenOfOwnerByIndex(address owner, uint256 index)
+        external
+        view
+        returns (uint256);
 
     /**
      * @dev Returns a token ID at a given `index` of all the tokens stored by the contract.
@@ -231,7 +250,8 @@ interface INftModule is IERC721Enumerable {
      * @param tokenId The ID of the newly minted token
      * @param data any data which should be sent to the receiver
      */
-    function safeMint(address to, uint256 tokenId, bytes memory data) external;
+    function safeMint(address to, uint256 tokenId, bytes memory data)
+        external;
 
     /**
      * @notice Allows the owner to burn tokens.

@@ -23,12 +23,15 @@ contract BaseParameters {
     address public constant USD_PROXY_ANDROMEDA =
         0x09d51516F38980035153a554c26Df3C6f51a23C3;
 
-    address public constant SMART_MARGIN_V3 = 0xe331a7eeC851Ba702aA8BF43070a178451d6D28E;
+    address public constant SMART_MARGIN_V3 =
+        0xe331a7eeC851Ba702aA8BF43070a178451d6D28E;
 
-    address public constant CANONICAL_ENTRY_POINT = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
+    address public constant CANONICAL_ENTRY_POINT =
+        0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
 
     // https://github.com/Uniswap/swap-router-contracts/blob/main/contracts/SwapRouter02.sol
-    address public constant UNISWAP_ROUTER_02 = 0x2626664c2603336E57B271c5C0b26F421741e481;
+    address public constant UNISWAP_ROUTER_02 =
+        0x2626664c2603336E57B271c5C0b26F421741e481;
 
     // https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
     address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
@@ -36,7 +39,8 @@ contract BaseParameters {
     // https://basescan.org/token/0x4200000000000000000000000000000000000006
     address public constant WETH = 0x4200000000000000000000000000000000000006;
 
-    address public constant UNI_WETH_USDC_POOL = 0xd0b53D9277642d899DF5C87A3966A349A798F224;
+    address public constant UNI_WETH_USDC_POOL =
+        0xd0b53D9277642d899DF5C87A3966A349A798F224;
 
     // https://usecannon.com/packages/synthetix-spot-market/3.3.5/84531-andromeda
     uint128 public constant SUSDC_SPOT_MARKET_ID = 1;

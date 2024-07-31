@@ -1,10 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.20;
 
-import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
-import {IEntryPoint} from "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol";
+import {
+    EntryPoint,
+    UserOperation
+} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
+import {IEntryPoint} from
+    "lib/account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
-import {MarginPaymaster, OptimismGoerliParameters, OptimismParameters, BaseParameters, Setup} from "script/Deploy.s.sol";
+import {
+    MarginPaymaster,
+    OptimismGoerliParameters,
+    OptimismParameters,
+    BaseParameters,
+    Setup
+} from "script/Deploy.s.sol";
 import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 import {IV3SwapRouter} from "src/interfaces/external/IV3SwapRouter.sol";
 import {IWETH9} from "src/interfaces/external/IWETH9.sol";
@@ -106,9 +116,8 @@ contract Bootstrap is Test {
         vm.prank(address(bootstrap));
         marginPaymaster.transferOwnership(address(this));
 
-        snxV3AccountsModule = INftModule(
-            perpsMarketProxy.getAccountTokenAddress()
-        );
+        snxV3AccountsModule =
+            INftModule(perpsMarketProxy.getAccountTokenAddress());
     }
 
     // function initializeOptimismGoerli() internal {

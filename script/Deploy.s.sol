@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.20;
 
-import {BaseGoerliParameters} from "script/utils/parameters/BaseGoerliParameters.sol";
+import {BaseGoerliParameters} from
+    "script/utils/parameters/BaseGoerliParameters.sol";
 import {BaseParameters} from "script/utils/parameters/BaseParameters.sol";
-import {OptimismGoerliParameters} from "script/utils/parameters/OptimismGoerliParameters.sol";
-import {OptimismParameters} from "script/utils/parameters/OptimismParameters.sol";
+import {OptimismGoerliParameters} from
+    "script/utils/parameters/OptimismGoerliParameters.sol";
+import {OptimismParameters} from
+    "script/utils/parameters/OptimismParameters.sol";
 import {Script} from "lib/forge-std/src/Script.sol";
 import {MarginPaymaster} from "src/MarginPaymaster.sol";
 

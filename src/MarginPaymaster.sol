@@ -2,14 +2,18 @@
 pragma solidity 0.8.20;
 
 import {EntryPoint} from "@account-abstraction/contracts/core/EntryPoint.sol";
-import {IPaymaster, UserOperation} from "lib/account-abstraction/contracts/interfaces/IPaymaster.sol";
+import {
+    IPaymaster,
+    UserOperation
+} from "lib/account-abstraction/contracts/interfaces/IPaymaster.sol";
 import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
 import {IV3SwapRouter} from "src/interfaces/external/IV3SwapRouter.sol";
 import {IWETH9} from "src/interfaces/external/IWETH9.sol";
 import {Zap} from "lib/zap/src/Zap.sol";
 import {OracleLibrary} from "src/libraries/OracleLibrary.sol";
 import {IUniswapV3Pool} from "src/interfaces/external/IUniswapV3Pool.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from
+    "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {INftModule} from "src/interfaces/external/INftModule.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
@@ -33,7 +37,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     bytes32 public constant PERPS_MODIFY_COLLATERAL_PERMISSION =
         "PERPS_MODIFY_COLLATERAL";
     uint32 public constant TWAP_PERIOD = 300; // 5 minutes
-    uint256 public constant MAX_POST_OP_GAS_USEAGE = 520072; // As last calculated
+    uint256 public constant MAX_POST_OP_GAS_USEAGE = 520_072; // As last calculated
     uint256 public constant IS_AUTHORIZED = 0;
     uint256 public constant IS_NOT_AUTHORIZED = 1;
     uint256 public constant DEFAULT_WALLET_INDEX = 0;
@@ -76,9 +80,8 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         weth = IWETH9(_weth);
         pool = IUniswapV3Pool(_pool);
         _USDC.approve(_uniV3Router, type(uint256).max);
-        snxV3AccountsModule = INftModule(
-            perpsMarketSNXV3.getAccountTokenAddress()
-        );
+        snxV3AccountsModule =
+            INftModule(perpsMarketSNXV3.getAccountTokenAddress());
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -95,7 +98,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice set the authorizer status
-    function setAuthorizer(address authorizer, bool status) external onlyOwner {
+    function setAuthorizer(address authorizer, bool status)
+        external
+        onlyOwner
+    {
         authorizers[authorizer] = status;
     }
 
@@ -105,36 +111,37 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     /// @notice it is called on-chain from the validatePaymasterUserOp, to validate the signature.
     /// @notice note that this signature covers all fields of the UserOperation, except the "paymasterAndData",
     /// @notice which will carry the signature itself.
-    function getHash(
-        UserOperation calldata userOp
-    ) public view returns (bytes32) {
+    function getHash(UserOperation calldata userOp)
+        public
+        view
+        returns (bytes32)
+    {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
-        bytes memory paymasterAddress = userOp
-            .paymasterAndData[:SIGNATURE_BYTES_OFFSET];
+        bytes memory paymasterAddress =
+            userOp.paymasterAndData[:SIGNATURE_BYTES_OFFSET];
         uint128 accountId;
         if (userOp.paymasterAndData.length > ACCOUNT_ID_BYTES_OFFSET) {
             accountId = uint128(
                 bytes16(userOp.paymasterAndData[ACCOUNT_ID_BYTES_OFFSET:])
             );
         }
-        return
-            keccak256(
-                abi.encode(
-                    userOp.sender,
-                    userOp.nonce,
-                    keccak256(userOp.initCode),
-                    keccak256(userOp.callData),
-                    userOp.callGasLimit,
-                    userOp.verificationGasLimit,
-                    userOp.preVerificationGas,
-                    userOp.maxFeePerGas,
-                    userOp.maxPriorityFeePerGas,
-                    uint256(bytes32(paymasterAddress)),
-                    accountId,
-                    block.chainid,
-                    address(this)
-                )
-            );
+        return keccak256(
+            abi.encode(
+                userOp.sender,
+                userOp.nonce,
+                keccak256(userOp.initCode),
+                keccak256(userOp.callData),
+                userOp.callGasLimit,
+                userOp.verificationGasLimit,
+                userOp.preVerificationGas,
+                userOp.maxFeePerGas,
+                userOp.maxPriorityFeePerGas,
+                uint256(bytes32(paymasterAddress)),
+                accountId,
+                block.chainid,
+                address(this)
+            )
+        );
     }
 
     /// @inheritdoc IPaymaster
@@ -154,13 +161,14 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         bytes32 customUserOpHash = getHash(userOp);
         address recovered = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(customUserOpHash),
-            userOp
-                .paymasterAndData[SIGNATURE_BYTES_OFFSET:ACCOUNT_ID_BYTES_OFFSET]
+            userOp.paymasterAndData[
+                SIGNATURE_BYTES_OFFSET:ACCOUNT_ID_BYTES_OFFSET
+            ]
         );
         bool isAuthorized = authorizers[recovered];
         validationData = isAuthorized ? IS_AUTHORIZED : IS_NOT_AUTHORIZED;
-        bytes memory accountId = userOp
-            .paymasterAndData[ACCOUNT_ID_BYTES_OFFSET:];
+        bytes memory accountId =
+            userOp.paymasterAndData[ACCOUNT_ID_BYTES_OFFSET:];
         context = abi.encode(
             userOp.sender,
             userOp.maxFeePerGas,
@@ -202,18 +210,14 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             uint128 accountId
         ) = abi.decode(context, (address, uint256, uint256, uint128));
 
-        uint256 gasPrice = getUserOpGasPrice(
-            maxFeePerGas,
-            maxPriorityFeePerGas
-        );
+        uint256 gasPrice = getUserOpGasPrice(maxFeePerGas, maxPriorityFeePerGas);
         uint256 postOpCostInWei = MAX_POST_OP_GAS_USEAGE * gasPrice;
-        uint256 costOfGasInUSDC = getCostOfGasInUSDC(
-            actualGasCostInWei + postOpCostInWei
-        );
+        uint256 costOfGasInUSDC =
+            getCostOfGasInUSDC(actualGasCostInWei + postOpCostInWei);
 
         if (costOfGasInUSDC == 0) return;
 
-        (uint256 availableUSDCInWallet, , ) = getUSDCAvailableInWallet(sender);
+        (uint256 availableUSDCInWallet,,) = getUSDCAvailableInWallet(sender);
 
         // draw funds from wallet before accessing margin
         if (availableUSDCInWallet >= costOfGasInUSDC) {
@@ -222,20 +226,14 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         } else {
             if (availableUSDCInWallet > 0) {
                 // pull remaining USDC from wallet
-                _USDC.transferFrom(
-                    sender,
-                    address(this),
-                    availableUSDCInWallet
-                );
+                _USDC.transferFrom(sender, address(this), availableUSDCInWallet);
             }
 
-            uint256 sUSDToWithdrawFromMargin = (costOfGasInUSDC -
-                availableUSDCInWallet) * USDC_TO_SUSDC_DECIMALS_INCREASE;
-            uint256 withdrawn = withdrawFromMargin(
-                sender,
-                sUSDToWithdrawFromMargin,
-                accountId
-            );
+            uint256 sUSDToWithdrawFromMargin = (
+                costOfGasInUSDC - availableUSDCInWallet
+            ) * USDC_TO_SUSDC_DECIMALS_INCREASE;
+            uint256 withdrawn =
+                withdrawFromMargin(sender, sUSDToWithdrawFromMargin, accountId);
             if (withdrawn > 0) {
                 // zap sUSD into USDC
                 _zapOut(withdrawn);
@@ -267,34 +265,38 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         entryPoint.unlockStake();
     }
 
-    function withdrawStake(address payable withdrawAddress) external onlyOwner {
+    function withdrawStake(address payable withdrawAddress)
+        external
+        onlyOwner
+    {
         entryPoint.withdrawStake(withdrawAddress);
     }
 
-    function withdrawTo(
-        address payable withdrawAddress,
-        uint256 withdrawAmount
-    ) external onlyOwner {
+    function withdrawTo(address payable withdrawAddress, uint256 withdrawAmount)
+        external
+        onlyOwner
+    {
         entryPoint.withdrawTo(withdrawAddress, withdrawAmount);
     }
 
-    function withdrawETH(
-        address payable withdrawAddress,
-        uint256 amount
-    ) external onlyOwner {
+    function withdrawETH(address payable withdrawAddress, uint256 amount)
+        external
+        onlyOwner
+    {
         withdrawAddress.call{value: amount}("");
     }
 
-    function withdrawUSDC(
-        address withdrawAddress,
-        uint256 amount
-    ) external onlyOwner {
+    function withdrawUSDC(address withdrawAddress, uint256 amount)
+        external
+        onlyOwner
+    {
         _USDC.transfer(withdrawAddress, amount);
     }
 
-    function setPercentageMarkup(
-        uint256 newPercentageMarkup
-    ) external onlyOwner {
+    function setPercentageMarkup(uint256 newPercentageMarkup)
+        external
+        onlyOwner
+    {
         percentageMarkup = newPercentageMarkup;
     }
 
@@ -316,35 +318,36 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         }
     }
 
-    function getCostOfGasInUSDC(
-        uint256 gasCostInWei
-    ) internal view returns (uint256) {
-        (int24 arithmeticMeanTick, ) = OracleLibrary.consult(
-            address(pool),
-            TWAP_PERIOD
-        );
-        return
-            (OracleLibrary.getQuoteAtTick(
+    function getCostOfGasInUSDC(uint256 gasCostInWei)
+        internal
+        view
+        returns (uint256)
+    {
+        (int24 arithmeticMeanTick,) =
+            OracleLibrary.consult(address(pool), TWAP_PERIOD);
+        return (
+            OracleLibrary.getQuoteAtTick(
                 arithmeticMeanTick,
                 uint128(gasCostInWei),
                 address(weth),
                 address(_USDC)
-            ) * percentageMarkup) / 100;
+            ) * percentageMarkup
+        ) / 100;
     }
 
-    function getWalletAccountId(
-        address wallet
-    ) internal view returns (uint128) {
+    function getWalletAccountId(address wallet)
+        internal
+        view
+        returns (uint128)
+    {
         /// @dev: note, this impl assumes the user has only one account
         /// @dev: if you want to support multiple accounts, append the accountId
         /// @dev: field to the end of the userOp.paymasterAndData
-        return
-            uint128(
-                snxV3AccountsModule.tokenOfOwnerByIndex(
-                    wallet,
-                    DEFAULT_WALLET_INDEX
-                )
-            );
+        return uint128(
+            snxV3AccountsModule.tokenOfOwnerByIndex(
+                wallet, DEFAULT_WALLET_INDEX
+            )
+        );
     }
 
     /// @custom:auditor // please check PARTICULARLY carefully over this function, this is the most specific logic to us
@@ -382,55 +385,46 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         }
 
         bool isAuthorized = perpsMarketSNXV3.isAuthorized(
-            accountId,
-            PERPS_MODIFY_COLLATERAL_PERMISSION,
-            address(this)
+            accountId, PERPS_MODIFY_COLLATERAL_PERMISSION, address(this)
         );
 
         if (!isAuthorized) return 0;
 
-        int256 withdrawableMargin = perpsMarketSNXV3.getWithdrawableMargin(
-            accountId
-        );
+        int256 withdrawableMargin =
+            perpsMarketSNXV3.getWithdrawableMargin(accountId);
 
         if (withdrawableMargin < 0) return 0;
         uint256 withdrawableMarginUint = uint256(withdrawableMargin);
 
-        uint256 amountToPullFromMargin = min(
-            sUSDToWithdrawFromMargin,
-            withdrawableMarginUint
-        );
+        uint256 amountToPullFromMargin =
+            min(sUSDToWithdrawFromMargin, withdrawableMarginUint);
 
         // pull sUSD from margin
         perpsMarketSNXV3.modifyCollateral(
-            accountId,
-            sUSDId,
-            -int256(amountToPullFromMargin)
+            accountId, sUSDId, -int256(amountToPullFromMargin)
         );
 
         return amountToPullFromMargin;
     }
 
-    function swapUSDCForWETH(
-        uint256 amountIn,
-        uint256 amountOutMinimum
-    ) internal returns (uint256) {
+    function swapUSDCForWETH(uint256 amountIn, uint256 amountOutMinimum)
+        internal
+        returns (uint256)
+    {
         IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter
             .ExactInputSingleParams({
-                tokenIn: address(_USDC),
-                tokenOut: address(weth),
-                fee: POOL_FEE,
-                recipient: address(this),
-                amountIn: amountIn,
-                amountOutMinimum: amountOutMinimum,
-                sqrtPriceLimitX96: 0
-            });
+            tokenIn: address(_USDC),
+            tokenOut: address(weth),
+            fee: POOL_FEE,
+            recipient: address(this),
+            amountIn: amountIn,
+            amountOutMinimum: amountOutMinimum,
+            sqrtPriceLimitX96: 0
+        });
         return uniV3Router.exactInputSingle(params);
     }
 
-    function getUSDCAvailableInWallet(
-        address wallet
-    )
+    function getUSDCAvailableInWallet(address wallet)
         internal
         view
         returns (uint256 availableUSDC, uint256 balance, uint256 allowance)

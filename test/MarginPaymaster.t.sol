@@ -2,10 +2,14 @@
 pragma solidity 0.8.20;
 
 import {Bootstrap} from "test/utils/Bootstrap.sol";
-import {EntryPoint, UserOperation} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
+import {
+    EntryPoint,
+    UserOperation
+} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
 import {AccountFactory, MockAccount} from "test/utils/MockAccount.sol";
 import {MarginPaymaster, IPaymaster} from "src/MarginPaymaster.sol";
-import {IStakeManager} from "lib/account-abstraction/contracts/interfaces/IStakeManager.sol";
+import {IStakeManager} from
+    "lib/account-abstraction/contracts/interfaces/IStakeManager.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {console} from "forge-std/console.sol";
 
@@ -14,7 +18,7 @@ contract MarginPaymasterTest is Bootstrap {
                                  STATE
     //////////////////////////////////////////////////////////////*/
 
-    uint256 constant BASE_BLOCK_NUMBER = 16915026;
+    uint256 constant BASE_BLOCK_NUMBER = 16_915_026;
     UserOperation internal userOp;
     bytes32 internal constant ADMIN_PERMISSION = "ADMIN";
     address constant USDC_MASTER_MINTER =
@@ -77,8 +81,7 @@ contract MarginPaymasterTest is Bootstrap {
             nonce: nonce,
             initCode: initCode,
             callData: abi.encodeWithSelector(
-                MockAccount.setupAccount.selector,
-                5 * 1e6
+                MockAccount.setupAccount.selector, 5 * 1e6
             ),
             callGasLimit: 2_000_000,
             verificationGasLimit: 2_000_000,
@@ -86,9 +89,7 @@ contract MarginPaymasterTest is Bootstrap {
             maxFeePerGas: 0.02 gwei,
             maxPriorityFeePerGas: 0.02 gwei,
             paymasterAndData: abi.encodePacked(
-                address(marginPaymaster),
-                emptySignature,
-                expectedAccountId
+                address(marginPaymaster), emptySignature, expectedAccountId
             ),
             signature: signature
         });
@@ -97,9 +98,7 @@ contract MarginPaymasterTest is Bootstrap {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
         signature = bytes.concat(r, s, bytes1(v));
         userOp.paymasterAndData = abi.encodePacked(
-            address(marginPaymaster),
-            signature,
-            expectedAccountId
+            address(marginPaymaster), signature, expectedAccountId
         );
         marginPaymaster.setAuthorizer(backEnd, true);
     }
@@ -177,9 +176,8 @@ contract MarginPaymasterTest is Bootstrap {
         marginPaymaster.depositToEntryPoint(depositAmount);
 
         // Check if the deposit was successful
-        uint256 entryPointBalance = entryPoint.balanceOf(
-            address(marginPaymaster)
-        );
+        uint256 entryPointBalance =
+            entryPoint.balanceOf(address(marginPaymaster));
         assertEq(entryPointBalance, depositAmount + initialPaymasterBalance);
     }
 
@@ -201,8 +199,8 @@ contract MarginPaymasterTest is Bootstrap {
         marginPaymaster.stake(stakeAmount, unstakeDelaySec);
 
         // Check if the stake was successful
-        IStakeManager.DepositInfo memory depositInfo = entryPoint
-            .getDepositInfo(address(marginPaymaster));
+        IStakeManager.DepositInfo memory depositInfo =
+            entryPoint.getDepositInfo(address(marginPaymaster));
         assertEq(depositInfo.stake, stakeAmount + initialStake);
         assertEq(depositInfo.unstakeDelaySec, unstakeDelaySec);
     }
@@ -229,8 +227,8 @@ contract MarginPaymasterTest is Bootstrap {
         marginPaymaster.unlockStake();
 
         // Check if the stake is unlocked
-        IStakeManager.DepositInfo memory depositInfo = entryPoint
-            .getDepositInfo(address(marginPaymaster));
+        IStakeManager.DepositInfo memory depositInfo =
+            entryPoint.getDepositInfo(address(marginPaymaster));
         assertEq(depositInfo.stake, stakeAmount + initialStake);
         assertEq(depositInfo.unstakeDelaySec, unstakeDelaySec);
         assertGt(depositInfo.withdrawTime, 0);
@@ -262,8 +260,8 @@ contract MarginPaymasterTest is Bootstrap {
         marginPaymaster.withdrawStake(withdrawAddress);
 
         // Check if the stake was withdrawn
-        IStakeManager.DepositInfo memory depositInfo = entryPoint
-            .getDepositInfo(address(marginPaymaster));
+        IStakeManager.DepositInfo memory depositInfo =
+            entryPoint.getDepositInfo(address(marginPaymaster));
         assertEq(depositInfo.stake, 0);
         assertEq(depositInfo.unstakeDelaySec, 0);
     }
@@ -288,9 +286,8 @@ contract MarginPaymasterTest is Bootstrap {
         marginPaymaster.withdrawTo(withdrawAddress, depositAmount);
 
         // // // Check if the withdrawal was successful
-        uint256 entryPointBalance = entryPoint.balanceOf(
-            address(marginPaymaster)
-        );
+        uint256 entryPointBalance =
+            entryPoint.balanceOf(address(marginPaymaster));
         assertEq(entryPointBalance, initialPaymasterBalance);
 
         // Check if the funds were transferred to the withdrawAddress
@@ -381,9 +378,8 @@ contract MarginPaymasterTest is Bootstrap {
 
         assertEq(sender.code.length, 0);
         assertEq(sender.balance, 0);
-        uint256 balanceOfPaymasterBefore = entryPoint.balanceOf(
-            address(marginPaymaster)
-        );
+        uint256 balanceOfPaymasterBefore =
+            entryPoint.balanceOf(address(marginPaymaster));
         assertEq(balanceOfPaymasterBefore, initialPaymasterBalance);
 
         mintUSDC(address(this), 1000 * 1e6);
@@ -392,9 +388,8 @@ contract MarginPaymasterTest is Bootstrap {
         vm.prank(bundler);
         entryPoint.handleOps(ops, bundler);
 
-        uint256 balanceOfPaymasterAfter = entryPoint.balanceOf(
-            address(marginPaymaster)
-        );
+        uint256 balanceOfPaymasterAfter =
+            entryPoint.balanceOf(address(marginPaymaster));
         assertLt(balanceOfPaymasterAfter, balanceOfPaymasterBefore);
         assertGt(sender.code.length, 0);
     }
@@ -423,18 +418,14 @@ contract MarginPaymasterTest is Bootstrap {
         assertGt(accountId, 0);
         assertTrue(
             perpsMarketProxy.hasPermission(
-                accountId,
-                ADMIN_PERMISSION,
-                marginPaymasterAddress
+                accountId, ADMIN_PERMISSION, marginPaymasterAddress
             )
         );
         assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
         assertEq(usdc.balanceOf(sender), 0);
         assertGt(usdc.balanceOf(marginPaymasterAddress), 0);
-        uint256 colAmount = perpsMarketProxy.getCollateralAmount(
-            accountId,
-            sUSDId
-        );
+        uint256 colAmount =
+            perpsMarketProxy.getCollateralAmount(accountId, sUSDId);
         assertGt(colAmount, 4 ether);
         assertLt(colAmount, 5 ether);
     }
@@ -445,9 +436,7 @@ contract MarginPaymasterTest is Bootstrap {
             snxV3AccountsModule.tokenByIndex(totalAccountSupply - 1) + 2
         );
         userOp.paymasterAndData = abi.encodePacked(
-            address(marginPaymaster),
-            new bytes(65),
-            wrongAccountId
+            address(marginPaymaster), new bytes(65), wrongAccountId
         );
         bytes32 userOpHash = marginPaymaster.getHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
@@ -470,18 +459,14 @@ contract MarginPaymasterTest is Bootstrap {
         assertGt(accountId, 0);
         assertTrue(
             perpsMarketProxy.hasPermission(
-                accountId,
-                ADMIN_PERMISSION,
-                marginPaymasterAddress
+                accountId, ADMIN_PERMISSION, marginPaymasterAddress
             )
         );
         assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
         assertEq(usdc.balanceOf(sender), 0);
         assertGt(usdc.balanceOf(marginPaymasterAddress), 0);
-        uint256 colAmount = perpsMarketProxy.getCollateralAmount(
-            accountId,
-            sUSDId
-        );
+        uint256 colAmount =
+            perpsMarketProxy.getCollateralAmount(accountId, sUSDId);
         assertGt(colAmount, 4 ether);
         assertLt(colAmount, 5 ether);
     }
@@ -499,36 +484,26 @@ contract MarginPaymasterTest is Bootstrap {
         assertEq(usdc.balanceOf(address(this)), 995 * 1e6);
         assertEq(usdc.balanceOf(sender), 0);
         assertGt(usdc.balanceOf(marginPaymasterAddress), 0);
-        uint256 colAmount = perpsMarketProxy.getCollateralAmount(
-            account.accountId(),
-            sUSDId
-        );
+        uint256 colAmount =
+            perpsMarketProxy.getCollateralAmount(account.accountId(), sUSDId);
         assertGt(colAmount, 4 ether);
         assertLt(colAmount, 5 ether);
     }
 
     function testTransferToWalletAndApprove() public {
         bytes memory approvalCalldata = abi.encodeWithSelector(
-            usdc.approve.selector,
-            marginPaymasterAddress,
-            type(uint256).max
+            usdc.approve.selector, marginPaymasterAddress, type(uint256).max
         );
         userOp.callData = abi.encodeWithSelector(
-            MockAccount.execute.selector,
-            address(usdc),
-            0,
-            approvalCalldata
+            MockAccount.execute.selector, address(usdc), 0, approvalCalldata
         );
-        userOp.paymasterAndData = abi.encodePacked(
-            address(marginPaymaster),
-            new bytes(65)
-        );
+        userOp.paymasterAndData =
+            abi.encodePacked(address(marginPaymaster), new bytes(65));
         bytes32 userOpHash = marginPaymaster.getHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
         userOp.paymasterAndData = abi.encodePacked(
-            address(marginPaymaster),
-            bytes.concat(r, s, bytes1(v))
+            address(marginPaymaster), bytes.concat(r, s, bytes1(v))
         );
 
         ops.push(userOp);
@@ -546,26 +521,18 @@ contract MarginPaymasterTest is Bootstrap {
 
     function testNoAccountAvailable() public {
         bytes memory approvalCalldata = abi.encodeWithSelector(
-            usdc.approve.selector,
-            marginPaymasterAddress,
-            type(uint256).max
+            usdc.approve.selector, marginPaymasterAddress, type(uint256).max
         );
         userOp.callData = abi.encodeWithSelector(
-            MockAccount.execute.selector,
-            address(usdc),
-            0,
-            approvalCalldata
+            MockAccount.execute.selector, address(usdc), 0, approvalCalldata
         );
-        userOp.paymasterAndData = abi.encodePacked(
-            address(marginPaymaster),
-            new bytes(65)
-        );
+        userOp.paymasterAndData =
+            abi.encodePacked(address(marginPaymaster), new bytes(65));
         bytes32 userOpHash = marginPaymaster.getHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
         userOp.paymasterAndData = abi.encodePacked(
-            address(marginPaymaster),
-            bytes.concat(r, s, bytes1(v))
+            address(marginPaymaster), bytes.concat(r, s, bytes1(v))
         );
 
         ops.push(userOp);
@@ -591,9 +558,7 @@ contract MarginPaymasterTest is Bootstrap {
         uint128 accountId = account.accountId();
         vm.prank(sender);
         perpsMarketProxy.revokePermission(
-            accountId,
-            ADMIN_PERMISSION,
-            marginPaymasterAddress
+            accountId, ADMIN_PERMISSION, marginPaymasterAddress
         );
 
         ops.pop();
@@ -602,32 +567,23 @@ contract MarginPaymasterTest is Bootstrap {
         bytes memory initCode;
         userOp.initCode = initCode;
         bytes memory newcalldata = abi.encodeWithSelector(
-            usdc.approve.selector,
-            address(0x654),
-            type(uint256).max
+            usdc.approve.selector, address(0x654), type(uint256).max
         );
         userOp.callData = abi.encodeWithSelector(
-            MockAccount.execute.selector,
-            address(usdc),
-            0,
-            newcalldata
+            MockAccount.execute.selector, address(usdc), 0, newcalldata
         );
-        userOp.paymasterAndData = abi.encodePacked(
-            address(marginPaymaster),
-            new bytes(65)
-        );
+        userOp.paymasterAndData =
+            abi.encodePacked(address(marginPaymaster), new bytes(65));
         bytes32 userOpHash = marginPaymaster.getHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
         userOp.paymasterAndData = abi.encodePacked(
-            address(marginPaymaster),
-            bytes.concat(r, s, bytes1(v))
+            address(marginPaymaster), bytes.concat(r, s, bytes1(v))
         );
         ops.push(userOp);
 
-        uint256 balanceOfPaymasterBefore = usdc.balanceOf(
-            address(marginPaymaster)
-        );
+        uint256 balanceOfPaymasterBefore =
+            usdc.balanceOf(address(marginPaymaster));
 
         mintUSDC(sender, 1e2);
 
@@ -645,20 +601,15 @@ contract MarginPaymasterTest is Bootstrap {
         mintUSDC(address(this), 1e2);
         usdc.approve(sender, type(uint256).max);
 
-        userOp.callData = abi.encodeWithSelector(
-            MockAccount.setupAccount.selector,
-            1e2
-        );
-        userOp.paymasterAndData = abi.encodePacked(
-            address(marginPaymaster),
-            new bytes(65)
-        );
+        userOp.callData =
+            abi.encodeWithSelector(MockAccount.setupAccount.selector, 1e2);
+        userOp.paymasterAndData =
+            abi.encodePacked(address(marginPaymaster), new bytes(65));
         bytes32 userOpHash = marginPaymaster.getHash(userOp);
         bytes32 ethSignedMessage = ECDSA.toEthSignedMessageHash(userOpHash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(backEndPk, ethSignedMessage);
         userOp.paymasterAndData = abi.encodePacked(
-            address(marginPaymaster),
-            bytes.concat(r, s, bytes1(v))
+            address(marginPaymaster), bytes.concat(r, s, bytes1(v))
         );
 
         ops.push(userOp);
@@ -698,9 +649,11 @@ contract MarginPaymasterTest is Bootstrap {
                               TEST HELPERS
     //////////////////////////////////////////////////////////////*/
 
-    function bytesToAddress(
-        bytes memory bys
-    ) private pure returns (address addr) {
+    function bytesToAddress(bytes memory bys)
+        private
+        pure
+        returns (address addr)
+    {
         assembly {
             addr := mload(add(bys, 20))
         }
@@ -713,19 +666,18 @@ contract MarginPaymasterTest is Bootstrap {
     }
 
     function getDummyUserOp() private pure returns (UserOperation memory) {
-        return
-            UserOperation({
-                sender: address(0),
-                nonce: 0,
-                initCode: "",
-                callData: "",
-                callGasLimit: 0,
-                verificationGasLimit: 0,
-                preVerificationGas: 0,
-                maxFeePerGas: 0,
-                maxPriorityFeePerGas: 0,
-                paymasterAndData: "",
-                signature: ""
-            });
+        return UserOperation({
+            sender: address(0),
+            nonce: 0,
+            initCode: "",
+            callData: "",
+            callGasLimit: 0,
+            verificationGasLimit: 0,
+            preVerificationGas: 0,
+            maxFeePerGas: 0,
+            maxPriorityFeePerGas: 0,
+            paymasterAndData: "",
+            signature: ""
+        });
     }
 }
