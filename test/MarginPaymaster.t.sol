@@ -15,6 +15,13 @@ import {console} from "forge-std/console.sol";
 
 contract MarginPaymasterTest is Bootstrap {
     /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
+
+    event PercentageMarkupSet(uint256);
+    event AuthorizerSet(address, bool);
+
+    /*//////////////////////////////////////////////////////////////
                                  STATE
     //////////////////////////////////////////////////////////////*/
 
@@ -127,6 +134,12 @@ contract MarginPaymasterTest is Bootstrap {
 
         // Verify the updated authorizer status
         assertFalse(marginPaymaster.authorizers(authorizer));
+    }
+
+    function testSetAuthorizerEvent(address authorizer, bool status) public {
+        vm.expectEmit(true, true, true, true);
+        emit AuthorizerSet(authorizer, status);
+        marginPaymaster.setAuthorizer(authorizer, status);
     }
 
     function testSetAuthorizerOnlyOwner() public {
@@ -359,6 +372,12 @@ contract MarginPaymasterTest is Bootstrap {
 
         // Verify the percentage markup was updated
         assertEq(marginPaymaster.percentageMarkup(), newPercentageMarkup);
+    }
+
+    function testSetPercentageMarkup(uint256 markup) public {
+        vm.expectEmit(true, true, true, true);
+        emit PercentageMarkupSet(markup);
+        marginPaymaster.setPercentageMarkup(markup);
     }
 
     function testSetPercentageMarkup_onlyOwner() public {
