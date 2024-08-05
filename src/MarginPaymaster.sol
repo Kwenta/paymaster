@@ -54,6 +54,19 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     uint256 public percentageMarkup = 120; // 20% markup on gas costs
 
     /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice emitted when the percentage markup is set by the owner
+    /// @param newPercentageMarkup the new percentage markup
+    event PercentageMarkupSet(uint256 newPercentageMarkup);
+
+    /// @notice emitted when an authorizer status is set by the owner
+    /// @param authorizer the address of the authorizer
+    /// @param status the status of the authorizer
+    event AuthorizerSet(address authorizer, bool status);
+
+    /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
 
@@ -98,11 +111,15 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice set the authorizer status
+    /// @dev only the owner can set the authorizer status
+    /// @param authorizer the address of the authorizer
+    /// @param status the status of the authorizer
     function setAuthorizer(address authorizer, bool status)
         external
         onlyOwner
     {
         authorizers[authorizer] = status;
+        emit AuthorizerSet(authorizer, status);
     }
 
     /// @custom:auditor // please check carefully over this function (make sure no replay attacks possible etc.)
@@ -293,11 +310,15 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         _USDC.transfer(withdrawAddress, amount);
     }
 
+    /// @notice set the percentage markup on gas costs
+    /// @dev only the owner can set the percentage markup
+    /// @param newPercentageMarkup the new percentage markup
     function setPercentageMarkup(uint256 newPercentageMarkup)
         external
         onlyOwner
     {
         percentageMarkup = newPercentageMarkup;
+        emit PercentageMarkupSet(newPercentageMarkup);
     }
 
     /*//////////////////////////////////////////////////////////////
