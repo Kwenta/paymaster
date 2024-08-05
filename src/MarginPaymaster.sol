@@ -279,11 +279,17 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                             FUND MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice swap USDC -> WETH -> ETH
+    /// @dev swaps entire USDC balance for ETH via Uniswap and WETH contract
+    /// @dev only callable by the owner
+    /// @param amountOutMinimum the minimum amount of ETH to receive
     function swapUSDCToETH(uint256 amountOutMinimum) external onlyOwner {
         uint256 amountIn = _USDC.balanceOf(address(this));
-        // swap USDC for WETH
+
+        // swap USDC for WETH via Uniswap v3 router
         uint256 amountOut = swapUSDCForWETH(amountIn, amountOutMinimum);
-        // unwrap WETH to ETH
+
+        // unwrap WETH to ETH via WETH contract
         weth.withdraw(amountOut);
     }
 
@@ -445,6 +451,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         return amountToPullFromMargin;
     }
 
+    /// @notice swap USDC for WETH via Uniswap v3 router
+    /// @param amountIn the amount of USDC to swap
+    /// @param amountOutMinimum the minimum amount of WETH to receive
+    /// @return the amount of WETH received
     function swapUSDCForWETH(uint256 amountIn, uint256 amountOutMinimum)
         internal
         returns (uint256)
@@ -459,6 +469,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             amountOutMinimum: amountOutMinimum,
             sqrtPriceLimitX96: 0
         });
+        
         return uniV3Router.exactInputSingle(params);
     }
 
