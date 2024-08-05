@@ -17,6 +17,7 @@ import {IERC20} from
 import {INftModule} from "src/interfaces/external/INftModule.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import {console} from "forge-std/console.sol";
 
 /// @title Kwenta Paymaster Contract
 /// @notice Responsible for paying tx gas fees using trader margin
@@ -72,6 +73,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
 
     error InvalidEntryPoint();
 
+    /// @notice thrown when the paymaster address provided in the userOp
+    /// is not the address of this contract
+    error InvalidPaymasterAddress();
+
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -122,26 +127,40 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         emit AuthorizerSet(authorizer, status);
     }
 
-    /// @custom:auditor // please check carefully over this function (make sure no replay attacks possible etc.)
     /// @notice return the hash we're going to sign off-chain (and validate on-chain)
     /// @notice this method is called by the off-chain service, to sign the request.
     /// @notice it is called on-chain from the validatePaymasterUserOp, to validate the signature.
-    /// @notice note that this signature covers all fields of the UserOperation, except the "paymasterAndData",
-    /// @notice which will carry the signature itself.
+    /// @dev this signature covers all fields of the UserOperation, except the "paymasterAndData"
+    /// @dev "paymasterAndData" will carry the signature itself
     function getHash(UserOperation calldata userOp)
         public
-        view
+        
         returns (bytes32)
-    {
-        //can't use userOp.hash(), since it contains also the paymasterAndData itself.
-        bytes memory paymasterAddress =
-            userOp.paymasterAndData[:SIGNATURE_BYTES_OFFSET];
+    {   
         uint128 accountId;
+
+        /// @dev userOp.hash() cannot be used because 
+        /// it contains the paymasterAndData
+        address paymasterAddress = address(
+            bytes20(
+                userOp.paymasterAndData[:SIGNATURE_BYTES_OFFSET]
+            )
+        );
+
+        /// @dev the paymaster address specified in userOp
+        /// must be the address of this contract
+        if (paymasterAddress != address(this)) {
+            revert InvalidPaymasterAddress();
+        }
+        
+        /// @dev userOp data may optionally contain an accountId
+        /// thus conditional logic sets it when present
         if (userOp.paymasterAndData.length > ACCOUNT_ID_BYTES_OFFSET) {
             accountId = uint128(
                 bytes16(userOp.paymasterAndData[ACCOUNT_ID_BYTES_OFFSET:])
             );
         }
+
         return keccak256(
             abi.encode(
                 userOp.sender,
@@ -153,10 +172,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                 userOp.preVerificationGas,
                 userOp.maxFeePerGas,
                 userOp.maxPriorityFeePerGas,
-                uint256(bytes32(paymasterAddress)),
+                paymasterAddress,
                 accountId,
-                block.chainid,
-                address(this)
+                block.chainid
             )
         );
     }
@@ -171,7 +189,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         uint256
     )
         external
-        view
+        
         onlyEntryPoint
         returns (bytes memory context, uint256 validationData)
     {
