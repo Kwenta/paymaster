@@ -89,7 +89,7 @@ contract MarginPaymasterTest is Bootstrap {
             initCode: initCode,
             callData: abi.encodeWithSelector(
                 MockAccount.setupAccount.selector, 5 * 1e6
-            ),
+                ),
             callGasLimit: 2_000_000,
             verificationGasLimit: 2_000_000,
             preVerificationGas: 200_000,
@@ -97,7 +97,7 @@ contract MarginPaymasterTest is Bootstrap {
             maxPriorityFeePerGas: 0.02 gwei,
             paymasterAndData: abi.encodePacked(
                 address(marginPaymaster), emptySignature, expectedAccountId
-            ),
+                ),
             signature: signature
         });
         bytes32 userOpHash = marginPaymaster.getHash(userOp);
@@ -194,7 +194,7 @@ contract MarginPaymasterTest is Bootstrap {
         assertEq(entryPointBalance, depositAmount + initialPaymasterBalance);
     }
 
-     function testDepositToEntryPointPayable() public {
+    function testDepositToEntryPointPayable() public {
         uint256 depositAmount = 1e18; // 1 ETH
 
         // Deposit ETH to EntryPoint

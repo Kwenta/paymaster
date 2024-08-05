@@ -1,49 +1,93 @@
 // Licence - KGSL: Kwenta General Source License
 pragma solidity 0.8.20;
 
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EntryPoint} from "@account-abstraction/contracts/core/EntryPoint.sol";
+import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import {IERC20} from
+    "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {Zap} from "lib/zap/src/Zap.sol";
 import {
     IPaymaster,
     UserOperation
 } from "lib/account-abstraction/contracts/interfaces/IPaymaster.sol";
+import {INftModule} from "src/interfaces/external/INftModule.sol";
 import {IPerpsMarketProxy} from "src/interfaces/external/IPerpsMarketProxy.sol";
+import {IUniswapV3Pool} from "src/interfaces/external/IUniswapV3Pool.sol";
 import {IV3SwapRouter} from "src/interfaces/external/IV3SwapRouter.sol";
 import {IWETH9} from "src/interfaces/external/IWETH9.sol";
-import {Zap} from "lib/zap/src/Zap.sol";
 import {OracleLibrary} from "src/libraries/OracleLibrary.sol";
-import {IUniswapV3Pool} from "src/interfaces/external/IUniswapV3Pool.sol";
-import {IERC20} from
-    "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {INftModule} from "src/interfaces/external/INftModule.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
 /// @title Kwenta Paymaster Contract
-/// @notice Responsible for paying tx gas fees using trader margin
+/// @notice Manages gas sponsorship for Kwenta traders
 /// @author tommyrharper (zeroknowledgeltd@gmail.com)
+/// @author jaredborders (jared@kwenta.io)
 contract MarginPaymaster is IPaymaster, Zap, Ownable {
+    /*//////////////////////////////////////////////////////////////
+                               CONSTANTS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice synthetix v3 sUSD token/synth Id
+    uint128 public constant SUSD_ID = 0;
+
+    /// @notice 0.05% uniswap v3 USDC/WETH pool fee tier
+    /// @custom:link https://www.geckoterminal.com/base/uniswap-v3-base/pools
+    uint24 public constant POOL_FEE = 500;
+
+    /// @notice synthetix v3 RBAC permission required to modify collateral
+    bytes32 public constant PERPS_MODIFY_COLLATERAL_PERMISSION =
+        "PERPS_MODIFY_COLLATERAL";
+
+    /// @notice seconds in the past from which to calculate the time-weighted means
+    /// @dev see OracleLibrary
+    uint32 public constant TWAP_PERIOD = 5 minutes;
+
+    /// @notice the maximum gas usage for the postOp function
+    /// @dev calculated on August 1st, 2024
+    uint256 public constant MAX_POST_OP_GAS_USEAGE = 520_072;
+
+    /// @notice assigned to validationData when the user is NOT authorized
+    /// @dev see validatePaymasterUserOp()
+    uint256 public constant IS_AUTHORIZED = 0;
+
+    /// @notice assigned to validationData when the user is authorized
+    /// @dev see validatePaymasterUserOp()
+    uint256 public constant IS_NOT_AUTHORIZED = 1;
+
+    /// @notice the index of the synthetx v3 account owned by the wallet
+    uint256 public constant DEFAULT_WALLET_INDEX = 0;
+
+    /// @notice the increase in decimals when converting USDC to sUSD
+    uint256 public constant USDC_TO_SUSDC_DECIMALS_INCREASE = 1e12;
+
+    /// @notice the offset of the signature bytes in the paymasterAndData field
+    uint256 public constant SIGNATURE_BYTES_OFFSET = 20;
+
+    /// @notice the offset of the account Id bytes in the paymasterAndData field
+    uint256 public constant ACCOUNT_ID_BYTES_OFFSET = 85;
+
     /*//////////////////////////////////////////////////////////////
                                IMMUTABLES
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice account-abstraction (EIP-4337) singleton EntryPoint implementation
     EntryPoint public immutable entryPoint;
-    IPerpsMarketProxy public immutable perpsMarketSNXV3;
-    IV3SwapRouter public immutable uniV3Router;
-    IWETH9 public immutable weth;
-    IUniswapV3Pool public immutable pool;
-    uint128 public constant sUSDId = 0;
+
+    /// @notice synthetix v3 perpetuals market proxy contract
+    IPerpsMarketProxy public immutable snxv3PerpsMarket;
+
+    /// @notice synthetix v3 NFT module contract
+    /// @dev used to fetch NFT specific data from synthetix v3 account NFTs
     INftModule public immutable snxV3AccountsModule;
-    uint24 constant POOL_FEE = 500; // 0.05%, top uni pool for USDC/WETH liquidity based on https://www.geckoterminal.com/base/uniswap-v3-base/pools
-    bytes32 public constant PERPS_MODIFY_COLLATERAL_PERMISSION =
-        "PERPS_MODIFY_COLLATERAL";
-    uint32 public constant TWAP_PERIOD = 300; // 5 minutes
-    uint256 public constant MAX_POST_OP_GAS_USEAGE = 520_072; // As last calculated
-    uint256 public constant IS_AUTHORIZED = 0;
-    uint256 public constant IS_NOT_AUTHORIZED = 1;
-    uint256 public constant DEFAULT_WALLET_INDEX = 0;
-    uint256 public constant USDC_TO_SUSDC_DECIMALS_INCREASE = 1e12;
-    uint256 public constant SIGNATURE_BYTES_OFFSET = 20;
-    uint256 public constant ACCOUNT_ID_BYTES_OFFSET = 85;
+
+    /// @notice uniswap v3 swap router contract
+    IV3SwapRouter public immutable uniV3Router;
+
+    /// @notice uniswap v3 USDC/WETH pool contract
+    IUniswapV3Pool public immutable univ3Pool;
+
+    /// @notice wrapped ether contract
+    IWETH9 public immutable weth;
 
     /*//////////////////////////////////////////////////////////////
                                  STATE
@@ -51,7 +95,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
 
     /// @notice authorizers are able to sign off-chain requests to use the paymaster
     mapping(address => bool) public authorizers;
-    uint256 public percentageMarkup = 120; // 20% markup on gas costs
+
+    /// @notice the percentage markup on gas costs
+    /// @dev 100 = 100%, 120 = 120%
+    uint256 public percentageMarkup = 120;
 
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
@@ -70,6 +117,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice thrown when the entry point is not the caller
     error InvalidEntryPoint();
 
     /// @notice thrown when the paymaster address provided in the userOp
@@ -80,9 +128,20 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice MarginPaymaster constructor
+    /// @dev Zap may revert if it's constructor parameters are incorrect
+    /// @param _entryPoint address of the (EIP-4337) singleton EntryPoint
+    /// @param _snxv3PerpsMarket address of the synthetix v3 perpetuals market proxy
+    /// @param _usdc address of the USDC token
+    /// @param _sUSDProxy address of the synthetix sUSD proxy
+    /// @param _spotMarketProxy address of the synthetix v3 Spot Market proxy
+    /// @param _sUSDCId the synthetix v3 sUSD token/synth Id
+    /// @param _uniV3Router address of the uniswap v3 Swap Router
+    /// @param _weth address of the wrapped ether contract
+    /// @param _pool address of the uniswap v3 USDC/WETH Pool
     constructor(
         address _entryPoint,
-        address _perpsMarketSNXV3,
+        address _snxv3PerpsMarket,
         address _usdc,
         address _sUSDProxy,
         address _spotMarketProxy,
@@ -92,19 +151,22 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         address _pool
     ) Zap(_usdc, _sUSDProxy, _spotMarketProxy, _sUSDCId) {
         entryPoint = EntryPoint(payable(_entryPoint));
-        perpsMarketSNXV3 = IPerpsMarketProxy(_perpsMarketSNXV3);
+        snxv3PerpsMarket = IPerpsMarketProxy(_snxv3PerpsMarket);
         uniV3Router = IV3SwapRouter(_uniV3Router);
         weth = IWETH9(_weth);
-        pool = IUniswapV3Pool(_pool);
-        _USDC.approve(_uniV3Router, type(uint256).max);
+        univ3Pool = IUniswapV3Pool(_pool);
         snxV3AccountsModule =
-            INftModule(perpsMarketSNXV3.getAccountTokenAddress());
+            INftModule(snxv3PerpsMarket.getAccountTokenAddress());
+
+        // give unlimited USDC allowance to the uniswap v3 router
+        _USDC.approve(_uniV3Router, type(uint256).max);
     }
 
     /*//////////////////////////////////////////////////////////////
                                MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice verify the entry point is the caller
     modifier onlyEntryPoint() {
         if (msg.sender != address(entryPoint)) revert InvalidEntryPoint();
         _;
@@ -123,35 +185,35 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         onlyOwner
     {
         authorizers[authorizer] = status;
+
         emit AuthorizerSet(authorizer, status);
     }
 
-    /// @notice return the hash we're going to sign off-chain (and validate on-chain)
-    /// @notice this method is called by the off-chain service, to sign the request.
-    /// @notice it is called on-chain from the validatePaymasterUserOp, to validate the signature.
-    /// @dev this signature covers all fields of the UserOperation, except the "paymasterAndData"
-    /// @dev "paymasterAndData" will carry the signature itself
+    /// @notice generate hash to sign and subsequently validate off-chain
+    /// @notice called by the off-chain service to sign the request
+    /// @notice called on-chain from the validatePaymasterUserOp to validate the signature
+    /// @custom:caution signature covers ALL fields of the UserOperation, EXCEPT paymasterAndData
+    /// @dev paymasterAndData will carry the signature itself
+    /// @param userOp the UserOperation struct
+    /// @return hash of the UserOperation struct
     function getHash(UserOperation calldata userOp)
         public
-        
+        view
         returns (bytes32)
-    {   
+    {
         uint128 accountId;
 
-        /// @dev userOp.hash() cannot be used because 
+        /// @dev userOp.hash() cannot be used because
         /// it contains the paymasterAndData
-        address paymasterAddress = address(
-            bytes20(
-                userOp.paymasterAndData[:SIGNATURE_BYTES_OFFSET]
-            )
-        );
+        address paymasterAddress =
+            address(bytes20(userOp.paymasterAndData[:SIGNATURE_BYTES_OFFSET]));
 
         /// @dev the paymaster address specified in userOp
         /// must be the address of this contract
         if (paymasterAddress != address(this)) {
             revert InvalidPaymasterAddress();
         }
-        
+
         /// @dev userOp data may optionally contain an accountId
         /// thus conditional logic sets it when present
         if (userOp.paymasterAndData.length > ACCOUNT_ID_BYTES_OFFSET) {
@@ -178,63 +240,86 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         );
     }
 
-    /// @inheritdoc IPaymaster
-    /// @notice We rely entirely on the back-end to decide which transactions should be sponsored
-    /// @notice if the user has USDC available in their wallet or margin, we will use that
-    /// @notice if they do not, the paymaster will pay
+    /// @notice payment validation: check if paymaster agrees to pay
+    /// @notice robust off-chain validation **is assumed** to have already occurred
+    /// @notice USDC is debited from wallet; if insufficient, account margin is used
+    /// @notice in the event of insufficient margin, paymaster will subsidize the gas cost
+    /// @dev must verify sender is the entryPoint; revert to reject this request
+    /// @dev validation code cannot use block.timestamp (or block.number)
+    /// @param userOp the user operation
+    /// @return context value to send to a postOp; zero length if postOp not required
+    /// @return validationData signature and time-range of this operation,
+    /// encoded the same as the return value of validateUserOperation:
+    /// - <20-byte> sigAuthorizer:
+    /// - - 0 for valid signature
+    /// - - 1 to mark signature failure
+    /// - - otherwise, an address of an authorizer contract
+    /// - <6-byte> validUntil: last timestamp this operation is valid
+    /// - - 0 for indefinite
+    /// - <6-byte> validAfter: first timestamp this operation is valid
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32,
         uint256
     )
         external
-        
+        view
         onlyEntryPoint
         returns (bytes memory context, uint256 validationData)
     {
         bytes32 customUserOpHash = getHash(userOp);
+
         address recovered = ECDSA.recover(
             ECDSA.toEthSignedMessageHash(customUserOpHash),
             userOp.paymasterAndData[
                 SIGNATURE_BYTES_OFFSET:ACCOUNT_ID_BYTES_OFFSET
             ]
         );
+
         bool isAuthorized = authorizers[recovered];
+
         validationData = isAuthorized ? IS_AUTHORIZED : IS_NOT_AUTHORIZED;
+
         bytes memory accountId =
             userOp.paymasterAndData[ACCOUNT_ID_BYTES_OFFSET:];
+
         context = abi.encode(
             userOp.sender,
             userOp.maxFeePerGas,
             userOp.maxPriorityFeePerGas,
-            /// @custom:auditor // watch out, i hacked out this accountId logic at the last minute, could have made a mistake
-            // the accountId field is optional, if it is not present we will take the first account appearing on-chain
-            // if the accountId is invalid, we will again attempt to take the first account appearing on-chain
-            // if it is set correctly, then margin will be pulled from specified accountId. This allows support for users with multiple snxv3 accounts
             uint128(bytes16(accountId))
-        ); // passed to the postOp method
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
                                 POST OP
     //////////////////////////////////////////////////////////////*/
 
-    /// @custom:auditor // please check carefully over this function, this is where most of the custom logic is
-    /// @inheritdoc IPaymaster
-    /// @notice attempt to pull funds from user's wallet, if insufficient, pull from margin
-    /// @notice if insufficient margin, pull whatever is available
+    /// @notice post-operation handler
+    /// @dev USDC is debited from wallet; if insufficient, account margin is used
+    /// @dev in the event of insufficient margin, paymaster will subsidize the gas cost
+    /// @dev verify sender is the entryPoint
+    /// @param mode enum with the following options:
+    /// - `opSucceeded`: user operation succeeded
+    /// - `opReverted`: user operation reverted -> still has to pay for gas
+    /// - `postOpReverted`: user operation succeeded, but caused postOp (in mode=opSucceeded)
+    ///   to revert; now this is the 2nd call, after user's operation was deliberately reverted
+    /// @param context value returned by validatePaymasterUserOp
+    /// @param actualGasCostInWei gas used so far (without this postOp call) in wei
     function postOp(
         PostOpMode mode,
         bytes calldata context,
         uint256 actualGasCostInWei
     ) external onlyEntryPoint {
-        /// @dev: if the mode is postOpReverted, this means the entry point contract already attempted
-        /// to execute this postOp function and it reverted. This is the second call to postOp
-        /// In this scenario we do not want to attempt to pull funds from the user's wallet
-        /// Because clearly this caused a reversion in the last attempt. If we revert again, then the paymaster
-        /// will be treated as DOSing the system and will be blacklisted by bundlers. Hence in this scenario
-        /// we just return early, allowing the paymaster to subsidize the gas cost. It is worth noting that
-        /// this scenario should never occur, but the check remains just in case.
+        /// @dev If the mode is `postOpReverted`, this means the entry point contract
+        /// already attempted to execute this postOp function and it reverted. Thus,
+        /// this is the second call to postOp. In this scenario, we do not want to
+        /// attempt to pull funds from the user's wallet because it caused a reversion
+        /// in the last attempt. If we revert again, then the paymaster will be treated
+        /// as DOSing the system and will be *blacklisted* by bundlers. Hence, in this
+        /// scenario, we just return early, allowing the paymaster to subsidize the gas
+        /// cost. It is worth noting that this scenario *should never occur*, but the
+        /// check remains just in case.
         if (mode == PostOpMode.postOpReverted) return;
 
         (
@@ -253,19 +338,21 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
 
         (uint256 availableUSDCInWallet,,) = getUSDCAvailableInWallet(sender);
 
-        // draw funds from wallet before accessing margin
+        // prioritize pulling USDC from wallet
         if (availableUSDCInWallet >= costOfGasInUSDC) {
-            // pull funds from wallet
             _USDC.transferFrom(sender, address(this), costOfGasInUSDC);
         } else {
+            // pull whatever is available from the wallet prior to margin
             if (availableUSDCInWallet > 0) {
-                // pull remaining USDC from wallet
                 _USDC.transferFrom(sender, address(this), availableUSDCInWallet);
             }
 
+            // determine the amount of sUSD to withdraw from margin
             uint256 sUSDToWithdrawFromMargin = (
                 costOfGasInUSDC - availableUSDCInWallet
             ) * USDC_TO_SUSDC_DECIMALS_INCREASE;
+
+            // withdraw sUSD from margin; if insufficient, pull whatever is available
             uint256 withdrawn =
                 withdrawFromMargin(sender, sUSDToWithdrawFromMargin, accountId);
             if (withdrawn > 0) {
@@ -280,31 +367,43 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice swap USDC -> WETH -> ETH
-    /// @dev swaps entire USDC balance for ETH via Uniswap and WETH contract
+    /// @dev swaps entire USDC balance for ETH via uniswap and WETH contract
     /// @dev only callable by the owner
     /// @param amountOutMinimum the minimum amount of ETH to receive
     function swapUSDCToETH(uint256 amountOutMinimum) external onlyOwner {
         uint256 amountIn = _USDC.balanceOf(address(this));
 
-        // swap USDC for WETH via Uniswap v3 router
+        // swap USDC for WETH via uniswap v3 router
         uint256 amountOut = swapUSDCForWETH(amountIn, amountOutMinimum);
 
         // unwrap WETH to ETH via WETH contract
         weth.withdraw(amountOut);
     }
 
+    /// @notice deposit ETH into the entry point
+    /// @dev only callable by the owner
+    /// @param amount the amount of ETH to deposit
     function depositToEntryPoint(uint256 amount) external payable onlyOwner {
         entryPoint.depositTo{value: amount}(address(this));
     }
 
+    /// @notice stake ETH in the entry point
+    /// @dev only callable by the owner
+    /// @param amount the amount of ETH to stake
+    /// @param unstakeDelaySec the delay in seconds before the stake can be withdrawn
     function stake(uint256 amount, uint32 unstakeDelaySec) external onlyOwner {
         entryPoint.addStake{value: amount}(unstakeDelaySec);
     }
 
+    /// @notice unlock the staked ETH in the entry point
+    /// @dev only callable by the owner
     function unlockStake() external onlyOwner {
         entryPoint.unlockStake();
     }
 
+    /// @notice withdraw staked ETH from the entry point
+    /// @dev only callable by the owner
+    /// @param withdrawAddress the address to withdraw the staked ETH to
     function withdrawStake(address payable withdrawAddress)
         external
         onlyOwner
@@ -312,6 +411,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         entryPoint.withdrawStake(withdrawAddress);
     }
 
+    /// @notice withdraw ETH from the entry point
+    /// @dev only callable by the owner
+    /// @param withdrawAddress the address to withdraw the ETH to
+    /// @param withdrawAmount the amount of ETH to withdraw
     function withdrawTo(address payable withdrawAddress, uint256 withdrawAmount)
         external
         onlyOwner
@@ -319,6 +422,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         entryPoint.withdrawTo(withdrawAddress, withdrawAmount);
     }
 
+    /// @notice withdraw ETH from the contract
+    /// @dev only callable by the owner
+    /// @param withdrawAddress the address to withdraw the ETH to
+    /// @param amount the amount of ETH to withdraw
     function withdrawETH(address payable withdrawAddress, uint256 amount)
         external
         onlyOwner
@@ -326,6 +433,10 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         withdrawAddress.call{value: amount}("");
     }
 
+    /// @notice withdraw USDC from the contract
+    /// @dev only callable by the owner
+    /// @param withdrawAddress the address to withdraw the USDC to
+    /// @param amount the amount of USDC to withdraw
     function withdrawUSDC(address withdrawAddress, uint256 amount)
         external
         onlyOwner
@@ -349,6 +460,9 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice copied from the EntryPoint contract
+    /// @dev determine the gas price this UserOp agrees to pay
+    /// @dev relayer/block builder may submit the tx with higher priorityFee,
+    /// but the user should not
     function getUserOpGasPrice(
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas
@@ -362,13 +476,16 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         }
     }
 
+    /// @notice get the cost of gas in USDC
+    /// @param gasCostInWei the cost of gas in Wei
+    /// @return the cost of gas in USDC
     function getCostOfGasInUSDC(uint256 gasCostInWei)
         internal
         view
         returns (uint256)
     {
         (int24 arithmeticMeanTick,) =
-            OracleLibrary.consult(address(pool), TWAP_PERIOD);
+            OracleLibrary.consult(address(univ3Pool), TWAP_PERIOD);
         return (
             OracleLibrary.getQuoteAtTick(
                 arithmeticMeanTick,
@@ -379,14 +496,17 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         ) / 100;
     }
 
+    /// @notice get the synthetix v3 account Id of which the wallet owns
+    /// @param wallet the address of the users smart wallet
+    /// @return synthetix v3 account Id
     function getWalletAccountId(address wallet)
         internal
         view
         returns (uint128)
     {
-        /// @dev: note, this impl assumes the user has only one account
-        /// @dev: if you want to support multiple accounts, append the accountId
-        /// @dev: field to the end of the userOp.paymasterAndData
+        /// @dev the following logic assumes the user has only one account
+        /// @dev append the accountId to the userOp.paymasterAndData
+        /// to support multiple accounts
         return uint128(
             snxV3AccountsModule.tokenOfOwnerByIndex(
                 wallet, DEFAULT_WALLET_INDEX
@@ -394,22 +514,16 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         );
     }
 
-    /// @custom:auditor // please check PARTICULARLY carefully over this function, this is the most specific logic to us
-    /// @custom:auditor // because we are pulling form SNXv3 margin (no one else is doing this in paymasters as far as we know)
-    /// @custom:auditor // this function should NEVER revert, see if you can find a way to make it revert
     /// @notice withdraws sUSD from margin account
     /// @notice if insufficent margin, pulls out whatever is available
     /// @param sender the address of the users smart wallet
     /// @param sUSDToWithdrawFromMargin the amount of sUSD to withdraw from margin
-    /// @param accountId the account Id of the user, if zero, we will attempt to find the actual ID onchain
+    /// @param accountId the account Id of the user, if zero, attempt to find ID onchain
     function withdrawFromMargin(
         address sender,
         uint256 sUSDToWithdrawFromMargin,
         uint128 accountId
     ) internal returns (uint256) {
-        /// @custom:auditor // watch out for this accountId logic, i hacked it out quickly at the last minute
-        /// @custom:auditor // previously it didn't support the BE defining an accountId in paymasterAndData
-        /// @custom:auditor // it always just checked the first account on-chain, so take a closer look at this
         if (accountId != 0) {
             // check if the account Id is valid
             try snxV3AccountsModule.ownerOf(accountId) returns (address owner) {
@@ -428,14 +542,14 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             accountId = getWalletAccountId(sender);
         }
 
-        bool isAuthorized = perpsMarketSNXV3.isAuthorized(
+        bool isAuthorized = snxv3PerpsMarket.isAuthorized(
             accountId, PERPS_MODIFY_COLLATERAL_PERMISSION, address(this)
         );
 
         if (!isAuthorized) return 0;
 
         int256 withdrawableMargin =
-            perpsMarketSNXV3.getWithdrawableMargin(accountId);
+            snxv3PerpsMarket.getWithdrawableMargin(accountId);
 
         if (withdrawableMargin <= 0) return 0;
         uint256 withdrawableMarginUint = uint256(withdrawableMargin);
@@ -444,17 +558,17 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             min(sUSDToWithdrawFromMargin, withdrawableMarginUint);
 
         // pull sUSD from margin
-        perpsMarketSNXV3.modifyCollateral(
-            accountId, sUSDId, -int256(amountToPullFromMargin)
+        snxv3PerpsMarket.modifyCollateral(
+            accountId, SUSD_ID, -int256(amountToPullFromMargin)
         );
 
         return amountToPullFromMargin;
     }
 
-    /// @notice swap USDC for WETH via Uniswap v3 router
+    /// @notice swap USDC for WETH via uniswap v3 router
     /// @param amountIn the amount of USDC to swap
     /// @param amountOutMinimum the minimum amount of WETH to receive
-    /// @return the amount of WETH received
+    /// @return amount of WETH received
     function swapUSDCForWETH(uint256 amountIn, uint256 amountOutMinimum)
         internal
         returns (uint256)
@@ -469,10 +583,15 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
             amountOutMinimum: amountOutMinimum,
             sqrtPriceLimitX96: 0
         });
-        
+
         return uniV3Router.exactInputSingle(params);
     }
 
+    /// @notice get the available USDC in the wallet
+    /// @param wallet the address of the users smart wallet
+    /// @return availableUSDC the available USDC in the wallet
+    /// @return balance the USDC balance of the wallet
+    /// @return allowance the USDC allowance of the wallet
     function getUSDCAvailableInWallet(address wallet)
         internal
         view
@@ -483,9 +602,22 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         availableUSDC = min(balance, allowance);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                                  MATH
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice get the minimum of two numbers
+    /// @dev if a == b, b is returned
+    /// @param a the first number
+    /// @param b the second number
+    /// @return the minimum of the two numbers
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                PAYABLE
+    //////////////////////////////////////////////////////////////*/
 
     receive() external payable {}
 }
