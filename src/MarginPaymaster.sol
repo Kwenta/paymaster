@@ -287,7 +287,7 @@ contract MarginPaymaster is IPaymaster, Zap, Ownable {
         weth.withdraw(amountOut);
     }
 
-    function depositToEntryPoint(uint256 amount) external onlyOwner {
+    function depositToEntryPoint(uint256 amount) external payable onlyOwner {
         entryPoint.depositTo{value: amount}(address(this));
     }
 
