@@ -194,6 +194,18 @@ contract MarginPaymasterTest is Bootstrap {
         assertEq(entryPointBalance, depositAmount + initialPaymasterBalance);
     }
 
+     function testDepositToEntryPointPayable() public {
+        uint256 depositAmount = 1e18; // 1 ETH
+
+        // Deposit ETH to EntryPoint
+        marginPaymaster.depositToEntryPoint{value: depositAmount}(depositAmount);
+
+        // Check if the deposit was successful
+        uint256 entryPointBalance =
+            entryPoint.balanceOf(address(marginPaymaster));
+        assertEq(entryPointBalance, depositAmount + initialPaymasterBalance);
+    }
+
     function testDepositToEntryPoint_onlyOwner() public {
         uint256 depositAmount = 1e18; // 1 ETH
 
