@@ -15,6 +15,13 @@ import {console} from "forge-std/console.sol";
 
 contract MarginPaymasterTest is Bootstrap {
     /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
+
+    event PercentageMarkupSet(uint256);
+    event AuthorizerSet(address, bool);
+
+    /*//////////////////////////////////////////////////////////////
                                  STATE
     //////////////////////////////////////////////////////////////*/
 
@@ -129,6 +136,12 @@ contract MarginPaymasterTest is Bootstrap {
         assertFalse(marginPaymaster.authorizers(authorizer));
     }
 
+    function testSetAuthorizerEvent(address authorizer, bool status) public {
+        vm.expectEmit(true, true, true, true);
+        emit AuthorizerSet(authorizer, status);
+        marginPaymaster.setAuthorizer(authorizer, status);
+    }
+
     function testSetAuthorizerOnlyOwner() public {
         address authorizer = address(0x123456);
         bool status = true;
@@ -174,6 +187,18 @@ contract MarginPaymasterTest is Bootstrap {
 
         // Deposit ETH to EntryPoint
         marginPaymaster.depositToEntryPoint(depositAmount);
+
+        // Check if the deposit was successful
+        uint256 entryPointBalance =
+            entryPoint.balanceOf(address(marginPaymaster));
+        assertEq(entryPointBalance, depositAmount + initialPaymasterBalance);
+    }
+
+    function testDepositToEntryPointPayable() public {
+        uint256 depositAmount = 1e18; // 1 ETH
+
+        // Deposit ETH to EntryPoint
+        marginPaymaster.depositToEntryPoint{value: depositAmount}(depositAmount);
 
         // Check if the deposit was successful
         uint256 entryPointBalance =
@@ -359,6 +384,12 @@ contract MarginPaymasterTest is Bootstrap {
 
         // Verify the percentage markup was updated
         assertEq(marginPaymaster.percentageMarkup(), newPercentageMarkup);
+    }
+
+    function testSetPercentageMarkup(uint256 markup) public {
+        vm.expectEmit(true, true, true, true);
+        emit PercentageMarkupSet(markup);
+        marginPaymaster.setPercentageMarkup(markup);
     }
 
     function testSetPercentageMarkup_onlyOwner() public {
